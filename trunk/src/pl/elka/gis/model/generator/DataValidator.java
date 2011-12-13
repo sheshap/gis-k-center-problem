@@ -1,11 +1,5 @@
 package pl.elka.gis.model.generator;
 
-import java.util.Set;
-import java.util.Vector;
-
-import pl.elka.gis.model.GEdge;
-import pl.elka.gis.model.GVertex;
-
 /**
  * used during loading/saving graph data to application
  * 
@@ -14,12 +8,21 @@ import pl.elka.gis.model.GVertex;
 public class DataValidator {
 
     public static boolean isValidFilename(String name) {
-        // TODO validate filename (no '/', no ':' etc)
+        if (name.contains(":") || name.contains("/") || name.contains("\\") || name.length() < 2) {
+            return false;
+        }
+        // TODO validate more?
         return true;
     }
 
-    public static boolean isValidGraphData(Vector<GVertex> vertexes, Set<GEdge> edges) {
-        // TODO validate
+    public static boolean isValidGraphData(int vertexCount, int edgeCount, int maxDegree, int minVertexesDistance) {
+        if (minVertexesDistance >= DataGenerator.MAX_X_Y_VALUE / 4) {
+            return false;
+        }
+        // if ((vertexCount * (vertexCount - 1)) / 2 <= edgeCount) {
+        // return false;
+        // }
+        // TODO validate some more?
         return true;
     }
 }
