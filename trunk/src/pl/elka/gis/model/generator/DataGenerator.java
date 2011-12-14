@@ -14,7 +14,6 @@ import pl.elka.gis.utils.Log;
 public class DataGenerator {
 
     private int mVertexesCount = 12;
-    // private int mEdgesCount = 2 * mVertexesCount;
     private int mMaxVertexDegree = 5;
     private int mEdgesProbability = 50; // percentage of edge occurence probability
     public final static int MAX_X_Y_VALUE = 2000; // max x or y value of vertex coord
@@ -104,45 +103,6 @@ public class DataGenerator {
         }
     }
 
-    // /**
-    // * this method generates edges using max edges count value
-    // */
-    // private void generateEdges() {
-    // Log.d(LOG_TAG, ">> generate edges");
-    // Vector<Integer> degrees = new Vector<Integer>(mVertexes.size());
-    // for (int i = 0; i < mVertexes.size(); ++i) {
-    // degrees.add(new Integer(0));
-    // }
-    // int edgesToBeCreated = mEdgesCount;
-    // while (edgesToBeCreated > 0) {
-    // int v1, v2;
-    // do {
-    // v1 = mRandomGenerator.nextInt(mVertexesCount) + 1;
-    // } while (degrees.elementAt(v1 - 1) == mMaxVertexDegree);
-    // do {
-    // v2 = mRandomGenerator.nextInt(mVertexesCount) + 1;
-    // } while (v1 == v2 || degrees.elementAt(v2 - 1) == mMaxVertexDegree);
-    // if (mEdges.add(new GEdge(v1, v2, 0))) {
-    // // as it is HashSet it will not add duplicates i.e. 1->2 and 2->1
-    // // so we only increment degree if edge was really added
-    // degrees.set(v1 - 1, degrees.elementAt(v1 - 1) + 1);
-    // degrees.set(v2 - 1, degrees.elementAt(v2 - 1) + 1);
-    // --edgesToBeCreated;
-    // boolean vertexDegreesAreMax = true;
-    // for (int i = 0; i < degrees.size(); ++i) {
-    // if (degrees.elementAt(i) != mMaxVertexDegree) {
-    // vertexDegreesAreMax = false;
-    // break; // don't check more, at least one is still not max degree
-    // }
-    // }
-    // if (vertexDegreesAreMax) {
-    // Log.d(LOG_TAG, " degrees of all vertexes are max. breaking with edgesToBeCreated=" + edgesToBeCreated);
-    // break;
-    // }
-    // }
-    // }
-    // }
-    // ///////////////////// getters and setters /////////////////////////////
     public int getVertexCount() {
         return mVertexesCount;
     }
