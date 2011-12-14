@@ -15,13 +15,15 @@ public class GVertex {
     public GVertex(int id, int x, int y) {
         mVertexId = id;
         mCoord = new Point(x, y);
-        mNeighboursIds = new HashSet<Integer>();
+        mNeighboursIds = new HashSet<Integer>(); // (!) important HashSet unlike the LinkedHashSet can mix order of elements!
+        // but here we don't care
     }
 
     public GVertex(int id, Point coord) {
         mVertexId = id;
         mCoord = new Point(coord);
-        mNeighboursIds = new HashSet<Integer>();
+        mNeighboursIds = new HashSet<Integer>(); // (!) important HashSet unlike the LinkedHashSet can mix order of elements!
+        // but here we don't care
     }
 
     public Point getCoord() {
