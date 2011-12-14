@@ -11,19 +11,25 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 
 import pl.elka.gis.logic.Controller;
 import pl.elka.gis.model.generator.FileHandler;
+import pl.elka.gis.ui.components.CalculationProgressDialog;
+import pl.elka.gis.ui.components.ProgressCallback;
 import pl.elka.gis.utils.FilePickingUtils;
 import pl.elka.gis.utils.Log;
 import pl.elka.gis.utils.WindowUtilities;
 
-public class MainFrame extends JFrame {
+public class MainFrame extends JFrame implements ProgressCallback {
 
     private static final String LOG_TAG = "MainFrame";
     private static final String APP_NAME = "K-graph center solver";
     private Dimension mScreenSize;
     private Controller mController;
+    private boolean mIsGraphLoaded;
+    private GraphGenerationFrame mGraphGenerationFrame;
+    private CalculationProgressDialog mProgressDialog;
 
     public MainFrame() {
         super(APP_NAME);
@@ -62,11 +68,11 @@ public class MainFrame extends JFrame {
         openItem.addActionListener(new ActionListener() {
 
             public void actionPerformed(ActionEvent e) {
-                Log.d(LOG_TAG, "Open is pressed");
                 File f = FilePickingUtils.openFileChooser(MainFrame.this);
                 if (f != null) {
                     try {
                         FileHandler.readSourceFileContent(f, mController);
+                        mIsGraphLoaded = true;
                     } catch (FileNotFoundException e1) {
                         e1.printStackTrace();
                     }
@@ -83,19 +89,48 @@ public class MainFrame extends JFrame {
         generateItem.addActionListener(new ActionListener() {
 
             public void actionPerformed(ActionEvent e) {
-                new GraphGenerationFrame(MainFrame.this.getLocationOnScreen());
+                if (mGraphGenerationFrame != null) {
+                    mGraphGenerationFrame.dispose(); // dispose and recreate
+                }
+                mGraphGenerationFrame = new GraphGenerationFrame(MainFrame.this.getLocationOnScreen());
             }
         });
         countGraph.addActionListener(new ActionListener() {
 
             public void actionPerformed(ActionEvent e) {
-                Log.d(LOG_TAG, "Count is pressed");
+                if (!mIsGraphLoaded) {
+                    JOptionPane.showMessageDialog(MainFrame.this, "No graph loaded.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                String val = (String) JOptionPane
+                        .showInputDialog(MainFrame.this, "Enter centers count:", "Centers count", JOptionPane.PLAIN_MESSAGE, null, null, "3");
+                if ((val != null) && (val.length() > 0)) {
+                    try {
+                        int centersCount = Integer.parseInt(val);
+                        startGraphProcessing();
+                        mController.countGraphData(centersCount, MainFrame.this);
+                        mProgressDialog.setVisible(true);
+                    } catch (NumberFormatException ex) {
+                        JOptionPane
+                                .showMessageDialog(MainFrame.this, "Wrong centers number.", "Error", JOptionPane.ERROR_MESSAGE);
+                        ex.printStackTrace();
+                    }
+                }
             }
         });
         stats.addActionListener(new ActionListener() {
 
             public void actionPerformed(ActionEvent e) {
-                Log.d(LOG_TAG, "Stats is pressed");
+                if (!mIsGraphLoaded) {
+                    JOptionPane.showMessageDialog(MainFrame.this, "No graph loaded.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                StringBuilder sb = new StringBuilder();
+                sb.append("Centers in vertexes: " + "" + "\n");
+                sb.append("Longest path vertexes: " + "" + "\n");
+                sb.append("Longest path weight: " + "" + "\n");
+                JOptionPane.showMessageDialog(MainFrame.this, sb.toString(), "Statistics", JOptionPane.INFORMATION_MESSAGE);
+                // print all data in the console
                 Log.d(LOG_TAG, mController.getControllerData());
             }
         });
@@ -103,5 +138,40 @@ public class MainFrame extends JFrame {
         setJMenuBar(bar);
         bar.add(file);
         bar.add(actions);
+    }
+
+    private void startGraphProcessing() {
+        if (mGraphGenerationFrame != null) {
+            mGraphGenerationFrame.dispose(); // dispose this dialog
+        }
+        mProgressDialog = new CalculationProgressDialog(this, "Graph calculation progress", true);
+        // TODO set location, size of dialog, set unable to close dialog (make invisible? use window listener?)
+        // TODO or perhaps use an option "show progress" and create normal dialog?
+        // mProgressDialog.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        // TODO processing dialog, time counting and such things
+    }
+
+    @Override
+    public void updateProgress(float progressValue) {
+        Log.d(LOG_TAG, "updateProgress=" + progressValue);
+        mProgressDialog.updateProgress(progressValue);
+    }
+
+    @Override
+    public void calculationError(String errorMessage) {
+        Log.d(LOG_TAG, "calculationError=" + errorMessage);
+        if (mProgressDialog != null) {
+            mProgressDialog.dispose();
+        }
+        JOptionPane.showMessageDialog(MainFrame.this, errorMessage, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    @Override
+    public void calculationFinished() {
+        Log.d(LOG_TAG, "calculationFinished");
+        if (mProgressDialog != null) {
+            mProgressDialog.dispose();
+        }
+        // TODO refresh ui and show resultset as a info dialog
     }
 }

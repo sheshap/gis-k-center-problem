@@ -1,5 +1,6 @@
 package pl.elka.gis.logic;
 
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -11,6 +12,8 @@ import org.apache.commons.collections.map.MultiKeyMap;
 
 import pl.elka.gis.model.GVertex;
 import pl.elka.gis.model.ResultSet;
+import pl.elka.gis.ui.components.ProgressCallback;
+import pl.elka.gis.utils.Log;
 
 public class Controller {
 
@@ -18,14 +21,47 @@ public class Controller {
     private PriorityBuffer mVertexHeap; // PriorityBuffer instead of deprecated BinaryHeap
     private MultiKeyMap mEdgesMap; // starting and ending vertex as keys
     private ResultSet mResultSet;
+    private static final String LOG_TAG = "Controller";
 
     public Controller() {
         mVertexSet = new LinkedHashSet<GVertex>();
         mEdgesMap = new MultiKeyMap();
     }
 
-    public ResultSet countGraphData() {
-        // TODO start algorithm here
+    private void prepareVertexHeap() {
+        Comparator<GVertex> vertexComparator = new Comparator<GVertex>() {
+
+            @Override
+            public int compare(GVertex o1, GVertex o2) {
+                // TODO is this comparator ok? taking x into account then y if needed
+                if (o1.getCoord().x < o2.getCoord().x) {
+                    return -1;
+                } else if (o1.getCoord().x > o2.getCoord().x) {
+                    return 1;
+                } else {
+                    if (o1.getCoord().y < o2.getCoord().y) {
+                        return -1;
+                    } else if (o1.getCoord().y > o2.getCoord().y) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                }
+            }
+        };
+        mVertexHeap = new PriorityBuffer(vertexComparator);
+        for (Iterator<GVertex> iterator = mVertexSet.iterator(); iterator.hasNext();) {
+            GVertex vert = iterator.next();
+            mVertexHeap.add(vert);
+        }
+    }
+
+    public ResultSet countGraphData(int centersCount, ProgressCallback callback) {
+        Log.d(LOG_TAG, ">> countGraphData(" + centersCount + ")");
+        prepareVertexHeap();
+        // TODO start algorithm inside this thread
+        new CalculatingThread(callback, mVertexSet, mVertexHeap, mEdgesMap, mResultSet).start();
+        Log.d(LOG_TAG, "<< countGraphData done");
         return mResultSet;
     }
 
@@ -56,7 +92,7 @@ public class Controller {
         MapIterator it = mEdgesMap.mapIterator();
         while (it.hasNext()) {
             MultiKey key = (MultiKey) it.next();
-            sb.append("v1=" + key.getKey(0) + ", v2=" + key.getKey(1) + ", weight= " + it.getValue() + "\n");
+            sb.append("" + key.getKey(0) + " <-> " + key.getKey(1) + ", weight= " + it.getValue() + "\n");
         }
         return sb.toString();
     }
