@@ -21,11 +21,13 @@ public class Controller {
     private PriorityBuffer mVertexHeap; // PriorityBuffer instead of deprecated BinaryHeap
     private MultiKeyMap mEdgesMap; // starting and ending vertex as keys
     private ResultSet mResultSet;
+    private int mCentersCount;
     private static final String LOG_TAG = "Controller";
 
     public Controller() {
         mVertexSet = new LinkedHashSet<GVertex>();
         mEdgesMap = new MultiKeyMap();
+        mResultSet = new ResultSet();
     }
 
     private void prepareVertexHeap() {
@@ -58,9 +60,10 @@ public class Controller {
 
     public ResultSet countGraphData(int centersCount, ProgressCallback callback) {
         Log.d(LOG_TAG, ">> countGraphData(" + centersCount + ")");
+        mCentersCount = centersCount;
         prepareVertexHeap();
         // TODO start algorithm inside this thread
-        new CalculatingThread(callback, mVertexSet, mVertexHeap, mEdgesMap, mResultSet).start();
+        new CalculatingThread(callback, mVertexSet, mVertexHeap, mEdgesMap, mResultSet, mCentersCount).start();
         Log.d(LOG_TAG, "<< countGraphData done");
         return mResultSet;
     }
@@ -71,6 +74,14 @@ public class Controller {
 
     public MultiKeyMap getEdgesMap() {
         return mEdgesMap;
+    }
+
+    public ResultSet getResultSet() {
+        return mResultSet;
+    }
+
+    public int getCentersCount() {
+        return mCentersCount;
     }
 
     public String getControllerData() {
@@ -95,5 +106,9 @@ public class Controller {
             sb.append("" + key.getKey(0) + " <-> " + key.getKey(1) + ", weight= " + it.getValue() + "\n");
         }
         return sb.toString();
+    }
+
+    public void setCentersCount(int mCentersCount) {
+        this.mCentersCount = mCentersCount;
     }
 }

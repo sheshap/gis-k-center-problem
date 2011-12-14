@@ -125,9 +125,5 @@ public class GraphGenerationFrame extends JFrame {
         public JTextField getTextField() {
             return mTextField;
         }
-
-        public void setTextFieldText(String newText) {
-            this.mTextField.setText(newText);
-        }
     }
 }
