@@ -2,6 +2,8 @@ package pl.elka.gis.ui.components;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.util.Iterator;
@@ -26,8 +28,10 @@ public class GraphPaintingPanel extends JPanel {
     private static final Color EDGE_COLOR = Color.GREEN;
     private static final Color CENTER_COLOR = Color.RED;
     private static final Color EDGE_ON_PATH_COLOR = Color.ORANGE;
-    private static final int VERTEX_DIM = 5; // dimension of vertex on panel in pixels
-    private static final int EDGE_DIM = 2; // thickness of edge on panel in pixels
+    private static final Color VERTEX_ID_COLOR = Color.BLACK;
+    private static final Font VERTEX_ID_FONT = new Font("Arial", Font.BOLD, 20);
+    private static final int VERTEX_DIM = 10; // dimension of vertex on panel in pixels
+    private static final int EDGE_DIM = 1; // thickness of edge on panel in pixels
     private Vector<GVertex> mVertexes;
     private Vector<GVertex> mCenters;
     private Vector<GEdge> mEdges;
@@ -58,7 +62,6 @@ public class GraphPaintingPanel extends JPanel {
         Log.d(LOG_TAG, "refreshGraph");
         if (mController == null) {
             Log.d(LOG_TAG, "mController==null - unable to refresh view");
-            // TODO perhaps we may throw exception here
             return;
         }
         Log.d(LOG_TAG, "mVertexes.size() == " + mVertexes.size());
@@ -88,12 +91,6 @@ public class GraphPaintingPanel extends JPanel {
             }
         }
         return null;
-        // int indexInVector = vec.indexOf(new GVertex(id, 0, 0)); // coords are not important, we just seek by ID
-        // if (indexInVector >= 0) {
-        // return vec.get(indexInVector);
-        // } else {
-        // return null;
-        // }
     }
 
     @Override
@@ -154,13 +151,24 @@ public class GraphPaintingPanel extends JPanel {
         for (Iterator<GVertex> iterator = mVertexes.iterator(); iterator.hasNext();) {
             GVertex v = iterator.next();
             g.setColor(VERTEX_COLOR);
-            g.fillRect(v.getCoord().x, v.getCoord().y, VERTEX_DIM, VERTEX_DIM);
+            g.fillRect(v.getCoord().x - (int) (VERTEX_DIM / 2), v.getCoord().y - (int) (VERTEX_DIM / 2), VERTEX_DIM, VERTEX_DIM);
+            g.setColor(VERTEX_ID_COLOR);
+            g.setFont(VERTEX_ID_FONT);
+            FontMetrics fm = g.getFontMetrics();
+            int verIdWidth = fm.stringWidth(String.valueOf(v.getVertexId()));
+            g.drawString(String.valueOf(v.getVertexId()), v.getCoord().x - verIdWidth - VERTEX_DIM, v.getCoord().y
+                    + (int) (VERTEX_ID_FONT.getSize() / 6));
         }
         // draw centers
         for (Iterator<GVertex> iterator = mCenters.iterator(); iterator.hasNext();) {
             GVertex v = iterator.next();
             g.setColor(CENTER_COLOR);
-            g.fillRect(v.getCoord().x, v.getCoord().y, VERTEX_DIM, VERTEX_DIM);
+            g.fillRect(v.getCoord().x - (int) (VERTEX_DIM / 2), v.getCoord().y - (int) (VERTEX_DIM / 2), VERTEX_DIM, VERTEX_DIM);
+            g.setColor(VERTEX_ID_COLOR);
+            FontMetrics fm = g.getFontMetrics();
+            int verIdWidth = fm.stringWidth(String.valueOf(v.getVertexId()));
+            g.drawString(String.valueOf(v.getVertexId()), v.getCoord().x - verIdWidth - VERTEX_DIM, v.getCoord().y
+                    + (int) (VERTEX_ID_FONT.getSize() / 6));
         }
     }
 }
