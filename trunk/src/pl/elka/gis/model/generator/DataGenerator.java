@@ -9,6 +9,7 @@ import java.util.Vector;
 
 import pl.elka.gis.model.GEdge;
 import pl.elka.gis.model.GVertex;
+import pl.elka.gis.utils.AppConstants;
 import pl.elka.gis.utils.Log;
 
 public class DataGenerator {
@@ -16,7 +17,6 @@ public class DataGenerator {
     private int mVertexesCount = 12;
     private int mMaxVertexDegree = 5;
     private int mEdgesProbability = 50; // percentage of edge occurence probability
-    public final static int MAX_X_Y_VALUE = 2000; // max x or y value of vertex coord
     private int mMinVertexCoordDifference = 10; // mininal difference in at least one dimension
     private Vector<GVertex> mVertexes;
     private Set<GEdge> mEdges;
@@ -41,8 +41,8 @@ public class DataGenerator {
         GVertex vertex;
         for (int i = 0; i < mVertexesCount; ++i) {
             do {
-                x = mRandomGenerator.nextInt(MAX_X_Y_VALUE + 1);
-                y = mRandomGenerator.nextInt(MAX_X_Y_VALUE + 1);
+                x = mRandomGenerator.nextInt(AppConstants.MAX_X_Y_VALUE + 1);
+                y = mRandomGenerator.nextInt(AppConstants.MAX_X_Y_VALUE + 1);
             } while (!isDistansBetweenPointsSufficient(x, y));
             vertex = new GVertex(i + 1, x, y);
             mVertexes.add(vertex);
@@ -56,7 +56,7 @@ public class DataGenerator {
             throw new DataValidationException("File name is invalid");
         }
         FileHandler.writeFileContent(filename, mVertexes, mEdges);
-        Log.d(LOG_TAG, "generated data savet to: " + filename + FileHandler.GRAPHS_EXTENSION);
+        Log.d(LOG_TAG, "generated data savet to: " + filename + AppConstants.GRAPHS_EXTENSION);
     }
 
     private boolean isDistansBetweenPointsSufficient(int newX, int newY) {
@@ -64,7 +64,8 @@ public class DataGenerator {
         for (Iterator<GVertex> iterator = mVertexes.iterator(); iterator.hasNext();) {
             elem = iterator.next();
             if (newX < mMinVertexCoordDifference || newY < mMinVertexCoordDifference
-                    || newX > MAX_X_Y_VALUE - mMinVertexCoordDifference || newY > MAX_X_Y_VALUE - mMinVertexCoordDifference) {
+                    || newX > AppConstants.MAX_X_Y_VALUE - mMinVertexCoordDifference
+                    || newY > AppConstants.MAX_X_Y_VALUE - mMinVertexCoordDifference) {
                 return false; // assure distance from edges
             }
             if (Math.abs(elem.getCoord().x - newX) < mMinVertexCoordDifference
@@ -91,7 +92,7 @@ public class DataGenerator {
                 }
                 boolean generateConnection = mRandomGenerator.nextInt(101) < mEdgesProbability ? true : false;
                 if (generateConnection && degrees.elementAt(j).intValue() < mMaxVertexDegree) {
-                    if (mEdges.add(new GEdge(i, j, 0))) {
+                    if (mEdges.add(new GEdge(i + 1, j + 1, 0))) {
                         // as it is HashSet it will not add duplicates i.e. 1->2 and 2->1
                         // so we only increment degree if edge was really added
                         // but it always be, because we check connections onty with next vertexes not previous

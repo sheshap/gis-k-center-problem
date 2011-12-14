@@ -25,6 +25,10 @@ public class Controller {
     private static final String LOG_TAG = "Controller";
 
     public Controller() {
+        initController();
+    }
+
+    public void initController() {
         mVertexSet = new LinkedHashSet<GVertex>();
         mEdgesMap = new MultiKeyMap();
         mResultSet = new ResultSet();

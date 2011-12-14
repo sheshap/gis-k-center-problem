@@ -16,6 +16,7 @@ import org.apache.commons.collections.map.MultiKeyMap;
 import pl.elka.gis.logic.Controller;
 import pl.elka.gis.model.GEdge;
 import pl.elka.gis.model.GVertex;
+import pl.elka.gis.utils.AppConstants;
 
 /**
  * class for reading data from file
@@ -23,9 +24,6 @@ import pl.elka.gis.model.GVertex;
  * @author pasu
  */
 public class FileHandler {
-
-    public static final String GRAPHS_FOLDER_PATH = "graph_files/";
-    public static final String GRAPHS_EXTENSION = ".gph";
 
     public static void readSourceFileContent(File source, Controller appController) throws FileNotFoundException {
         Set<GVertex> vertexes = appController.getVertexSet();
@@ -40,7 +38,7 @@ public class FileHandler {
         int vertexCount = 0;
         int edgeCount = 0; // don't really need this - just browse to the end of file
         int vx, vy; // vertex x and y coord
-        int vId = 0; // vertex ID
+        int vId = 1; // vertex ID
         int edge1, edge2; // edge starting vertex, edge ending vertex
         while (scanner.hasNextInt()) {
             if (lineNum == 0) {
@@ -65,7 +63,7 @@ public class FileHandler {
                     edge2 = scanner.nextInt();
                     edges
                             .put(new MultiKey(new Integer(edge1), new Integer(edge2)), countDistanceBetweenVertexes(supportVertexVector
-                                    .elementAt(edge1), supportVertexVector.elementAt(edge2)));
+                                    .elementAt(edge1 - 1), supportVertexVector.elementAt(edge2 - 1)));
                     supportEdgesVector.add(new GEdge(edge1, edge2, 0)); // weight is not important for support vector
                 }
             }
@@ -77,15 +75,15 @@ public class FileHandler {
             GEdge gEdge = iterator.next();
             int s = gEdge.getStartingVertexId();
             int e = gEdge.getEndingVertexId();
-            supportVertexVector.elementAt(s).getNeighboursIds().add(new Integer(e));
-            supportVertexVector.elementAt(e).getNeighboursIds().add(new Integer(s));
+            supportVertexVector.elementAt(s - 1).getNeighboursIds().add(new Integer(e));
+            supportVertexVector.elementAt(e - 1).getNeighboursIds().add(new Integer(s));
         }
         // now copy vector to vertex set
         vertexes.addAll(supportVertexVector);
     }
 
     public static void writeFileContent(String filename, Vector<GVertex> vertexes, Set<GEdge> edges) throws IOException {
-        FileWriter outFile = new FileWriter(GRAPHS_FOLDER_PATH + filename + GRAPHS_EXTENSION);
+        FileWriter outFile = new FileWriter(AppConstants.GRAPHS_FOLDER_PATH + filename + AppConstants.GRAPHS_EXTENSION);
         PrintWriter out = new PrintWriter(outFile);
         out.println(vertexes.size() + " " + edges.size());
         GVertex ver;

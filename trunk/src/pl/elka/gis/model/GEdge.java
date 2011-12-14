@@ -19,9 +19,10 @@ public class GEdge {
      * @return
      */
     public boolean equals(GEdge e2) {
-        if (mStartingVertexId == e2.getStartingVertexId() && mEndingVertexId == e2.getEndingVertexId()
-                || mStartingVertexId == e2.getEndingVertexId() && mEndingVertexId == e2.getStartingVertexId())
+        if ((mStartingVertexId == e2.getStartingVertexId() && mEndingVertexId == e2.getEndingVertexId())
+                || (mStartingVertexId == e2.getEndingVertexId() && mEndingVertexId == e2.getStartingVertexId())) {
             return true;
+        }
         return false;
     }
 
