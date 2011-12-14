@@ -3,7 +3,6 @@ package pl.elka.gis.ui;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.ScrollPane;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -21,10 +20,8 @@ import javax.swing.JOptionPane;
 
 import pl.elka.gis.logic.Controller;
 import pl.elka.gis.model.ResultSet;
-import pl.elka.gis.model.generator.DataGenerator;
 import pl.elka.gis.model.generator.FileHandler;
 import pl.elka.gis.ui.components.CalculationProgressDialog;
-import pl.elka.gis.ui.components.GraphPaintingPanel;
 import pl.elka.gis.ui.components.ProgressCallback;
 import pl.elka.gis.utils.FilePickingUtils;
 import pl.elka.gis.utils.Log;
@@ -43,7 +40,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
     private JMenuItem mProgressOption;
     private JLabel mStatusLabel;
     private String mLastStatusText;
-    private GraphPaintingPanel mGraphUIPanel;
+    private GraphFrame mGraphFrame;
     private long mGraphCalculateStartTime;
     private long mGraphCalculateEndTime;
 
@@ -53,14 +50,9 @@ public class MainFrame extends JFrame implements ProgressCallback {
         mScreenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setLocation(mScreenSize.width / 4, mScreenSize.height / 4);
         prepareMenu();
-        mGraphUIPanel = new GraphPaintingPanel();
         mLastStatusText = "  Idle";
         mStatusLabel = new JLabel(mLastStatusText);
         Container con = getContentPane();
-        mGraphUIPanel.setPreferredSize(new Dimension(DataGenerator.MAX_X_Y_VALUE, DataGenerator.MAX_X_Y_VALUE));
-        ScrollPane scroll = new ScrollPane();
-        scroll.add(mGraphUIPanel);
-        con.add(scroll, BorderLayout.CENTER);
         con.add(mStatusLabel, BorderLayout.SOUTH);
         setSize(mScreenSize.width / 2, mScreenSize.height / 2);
         setPreferredSize(new Dimension(mScreenSize.width / 2, mScreenSize.height / 2));
@@ -92,9 +84,22 @@ public class MainFrame extends JFrame implements ProgressCallback {
         mProgressOption = new JMenuItem("Show progress");
         mProgressOption.setMnemonic('p');
         mProgressOption.setEnabled(false);
+        JMenuItem showGraph = new JMenuItem("Show graph");
+        showGraph.setMnemonic('h');
+        actions.add(showGraph);
         actions.add(mProgressOption);
         // adding action listener to menu items
         // file menu
+        showGraph.addActionListener(new ActionListener() {
+
+            public void actionPerformed(ActionEvent e) {
+                if (mGraphFrame == null) {
+                    mGraphFrame = new GraphFrame(getLocationOnScreen());
+                }
+                mGraphFrame.setVisible(true);
+                mGraphFrame.refreshGraph();
+            }
+        });
         openItem.addActionListener(new ActionListener() {
 
             public void actionPerformed(ActionEvent e) {
@@ -103,14 +108,21 @@ public class MainFrame extends JFrame implements ProgressCallback {
                             .showMessageDialog(MainFrame.this, "Calculation in progress.\nPlease wait until finished.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
+                if (mGraphFrame == null) {
+                    mGraphFrame = new GraphFrame(getLocationOnScreen());
+                }
                 File f = FilePickingUtils.openFileChooser(MainFrame.this);
                 if (f != null) {
                     try {
+                        mController.initController(); // remove old data
                         FileHandler.readSourceFileContent(f, mController);
+                        mGraphFrame.setPlainGraphController(mController);
                         mIsGraphLoaded = true;
                         mLastStatusText = "File: " + f.getName() + ", Vertexes=" + mController.getVertexSet().size() + ", Edges="
                                 + mController.getEdgesMap().size();
                         mStatusLabel.setText(mLastStatusText);
+                        mGraphFrame.setVisible(true);
+                        mGraphFrame.refreshGraph();
                     } catch (FileNotFoundException e1) {
                         e1.printStackTrace();
                     }
@@ -201,6 +213,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
         ResultSet lastResult = mController.getResultSet();
         sb.append("Centers in vertexes: " + lastResult.getCentersSetAsString() + "\n");
         sb.append("Longest path vertexes: " + lastResult.getLongestPathVertexSetAsString() + "\n");
+        sb.append("Longest path edges: " + lastResult.getLongestPathEdgesSetAsString() + "\n");
         sb.append("Longest path weight: " + lastResult.getLongestPath() + "\n");
         if (mGraphCalculateStartTime != 0 && mGraphCalculateEndTime != 0) {
             long calTime = mGraphCalculateEndTime - mGraphCalculateStartTime;
@@ -253,7 +266,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
         if (mProgressDialog != null) {
             mProgressDialog.dispose();
         }
-        // TODO refresh ui and show resultset as a info dialog
+        mGraphFrame.refreshGraph();
         mGraphCalculationInProgress = false;
         mProgressOption.setEnabled(false);
         mStatusLabel.setText(mLastStatusText);

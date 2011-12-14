@@ -1,5 +1,7 @@
 package pl.elka.gis.model.generator;
 
+import pl.elka.gis.utils.AppConstants;
+
 /**
  * used during loading/saving graph data to application
  * 
@@ -15,7 +17,7 @@ public class DataValidator {
     }
 
     public static boolean isValidGraphData(int vertexCount, int edgeCreationProbability, int maxDegree, int minVertexesDistance) {
-        if (minVertexesDistance >= DataGenerator.MAX_X_Y_VALUE / 4) {
+        if (minVertexesDistance >= AppConstants.MAX_X_Y_VALUE / 4) {
             return false;
         }
         if (vertexCount > 50) {
