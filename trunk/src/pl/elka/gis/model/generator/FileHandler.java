@@ -25,6 +25,7 @@ import pl.elka.gis.model.GVertex;
 public class FileHandler {
 
     public static final String GRAPHS_FOLDER_PATH = "graph_files/";
+    public static final String GRAPHS_EXTENSION = ".gph";
 
     public static void readSourceFileContent(File source, Controller appController) throws FileNotFoundException {
         Set<GVertex> vertexes = appController.getVertexSet();
@@ -84,7 +85,7 @@ public class FileHandler {
     }
 
     public static void writeFileContent(String filename, Vector<GVertex> vertexes, Set<GEdge> edges) throws IOException {
-        FileWriter outFile = new FileWriter(GRAPHS_FOLDER_PATH + filename);
+        FileWriter outFile = new FileWriter(GRAPHS_FOLDER_PATH + filename + GRAPHS_EXTENSION);
         PrintWriter out = new PrintWriter(outFile);
         out.println(vertexes.size() + " " + edges.size());
         GVertex ver;

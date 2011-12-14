@@ -19,6 +19,7 @@ import javax.swing.JTextField;
 
 import pl.elka.gis.model.generator.DataGenerator;
 import pl.elka.gis.model.generator.DataValidationException;
+import pl.elka.gis.model.generator.FileHandler;
 
 /**
  * graph creation frame
@@ -90,8 +91,9 @@ public class GraphGenerationFrame extends JFrame {
                     e.printStackTrace();
                 }
                 if (generationSuccessful) {
-                    JOptionPane.showMessageDialog(GraphGenerationFrame.this, "Saved generated graph to \""
-                            + mLines[0].getTextField().getText() + "\" file.", "Done", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane
+                            .showMessageDialog(GraphGenerationFrame.this, "Saved generated graph to \""
+                                    + mLines[0].getTextField().getText() + FileHandler.GRAPHS_EXTENSION + "\" file.", "Done", JOptionPane.INFORMATION_MESSAGE);
                 } else {
                     JOptionPane
                             .showMessageDialog(GraphGenerationFrame.this, "Error generating graph.", "Error", JOptionPane.ERROR_MESSAGE);
