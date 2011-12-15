@@ -37,4 +37,20 @@ public class GVertex {
     public Set<Integer> getNeighboursIds() {
         return mNeighboursIds;
     }
+
+    public int getShortestPath() {
+        return mShortestPath;
+    }
+
+    public void setShortestPath(int mShortestPath) {
+        this.mShortestPath = mShortestPath;
+    }
+
+    public GVertex getNearestCenter() {
+        return mNearestCenter;
+    }
+
+    public void setNearestCenter(GVertex mNearestCenter) {
+        this.mNearestCenter = mNearestCenter;
+    }
 }

@@ -56,19 +56,14 @@ public class Controller {
             }
         };
         mVertexHeap = new PriorityBuffer(vertexComparator);
-        for (Iterator<GVertex> iterator = mVertexSet.iterator(); iterator.hasNext();) {
-            GVertex vert = iterator.next();
-            mVertexHeap.add(vert);
-        }
     }
 
     public ResultSet countGraphData(int centersCount, ProgressCallback callback) {
         Log.d(LOG_TAG, ">> countGraphData(" + centersCount + ")");
         mCentersCount = centersCount;
         prepareVertexHeap();
-        // TODO start algorithm inside this thread
         new CalculatingThread(callback, mVertexSet, mVertexHeap, mEdgesMap, mResultSet, mCentersCount).start();
-        Log.d(LOG_TAG, "<< countGraphData done");
+        Log.d(LOG_TAG, "<< countGraphData done - background thread started");
         return mResultSet;
     }
 
