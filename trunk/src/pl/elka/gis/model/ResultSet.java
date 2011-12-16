@@ -17,6 +17,13 @@ public class ResultSet {
         mLongestPathEdgesSet = new LinkedHashSet<GEdge>();
     }
 
+    public void clear() {
+        mCentralVertexSet = new LinkedHashSet<GVertex>();
+        mLongestPathVertexSet = new LinkedHashSet<GVertex>();
+        mLongestPathEdgesSet = new LinkedHashSet<GEdge>();
+        mLongestPath = Integer.MAX_VALUE;
+    }
+
     public Set<GVertex> getCentralVertexSet() {
         return mCentralVertexSet;
     }

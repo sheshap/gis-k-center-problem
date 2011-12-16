@@ -75,11 +75,14 @@ public class FileHandler {
             GEdge gEdge = iterator.next();
             int s = gEdge.getStartingVertexId();
             int e = gEdge.getEndingVertexId();
-            supportVertexVector.elementAt(s - 1).getNeighboursIds().add(new Integer(e));
-            supportVertexVector.elementAt(e - 1).getNeighboursIds().add(new Integer(s));
+            supportVertexVector.elementAt(s - 1).getNeighbours().add(supportVertexVector.elementAt(e - 1));
+            supportVertexVector.elementAt(e - 1).getNeighbours().add(supportVertexVector.elementAt(s - 1));
         }
         // now copy vector to vertex set
         vertexes.addAll(supportVertexVector);
+        // make original copies that won't be changed
+        appController.getVertexSetOriginal().addAll(vertexes);
+        appController.getEdgesMapOriginal().putAll(edges);
     }
 
     public static void writeFileContent(String filename, Vector<GVertex> vertexes, Set<GEdge> edges) throws IOException {

@@ -17,6 +17,8 @@ import pl.elka.gis.utils.Log;
 
 public class Controller {
 
+    private Set<GVertex> mVertexSetOriginal; // this set will not be touched by algorithm
+    private MultiKeyMap mEdgesMapOriginal; // this set will not be touched by algorithm
     private Set<GVertex> mVertexSet;
     private PriorityBuffer mVertexHeap; // PriorityBuffer instead of deprecated BinaryHeap
     private MultiKeyMap mEdgesMap; // starting and ending vertex as keys
@@ -31,7 +33,19 @@ public class Controller {
     public void initController() {
         mVertexSet = new LinkedHashSet<GVertex>();
         mEdgesMap = new MultiKeyMap();
+        mVertexSetOriginal = new LinkedHashSet<GVertex>();
+        mEdgesMapOriginal = new MultiKeyMap();
         mResultSet = new ResultSet();
+    }
+
+    public void resetControllerWithSameData() {
+        mCentersCount = 0;
+        mResultSet.clear();
+        // mVertexHeap will be recreated in prepareVertexHeap
+        mVertexSet.clear();
+        mVertexSet.addAll(mVertexSetOriginal);
+        mEdgesMap.clear();
+        mEdgesMap.putAll(mEdgesMapOriginal);
     }
 
     private void prepareVertexHeap() {
@@ -92,8 +106,8 @@ public class Controller {
             GVertex vert = iterator.next();
             sb.append("id=" + vert.getVertexId() + ", x=" + vert.getCoord().x + ", y=" + vert.getCoord().y + "\n");
             sb.append("neighbors=");
-            for (Iterator<Integer> iterator2 = vert.getNeighboursIds().iterator(); iterator2.hasNext();) {
-                int neighborId = iterator2.next().intValue();
+            for (Iterator<GVertex> iterator2 = vert.getNeighbours().iterator(); iterator2.hasNext();) {
+                int neighborId = iterator2.next().getVertexId();
                 sb.append(" - " + neighborId);
             }
             sb.append("\n");
@@ -109,5 +123,13 @@ public class Controller {
 
     public void setCentersCount(int mCentersCount) {
         this.mCentersCount = mCentersCount;
+    }
+
+    public Set<GVertex> getVertexSetOriginal() {
+        return mVertexSetOriginal;
+    }
+
+    public MultiKeyMap getEdgesMapOriginal() {
+        return mEdgesMapOriginal;
     }
 }
