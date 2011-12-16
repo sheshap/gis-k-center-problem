@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Random;
 import java.util.Set;
-import java.util.Vector;
 
 import org.apache.commons.collections.MapIterator;
 import org.apache.commons.collections.buffer.PriorityBuffer;
@@ -75,7 +74,7 @@ public class CalculatingThread extends Thread {
                 break;
         }
         findCentersAlgorythm(useFullVersion);
-        // fakeCountCentersAlgorithm(); // FIXME delete this when ready
+        fakeCountCentersAlgorithm(); // FIXME delete this when ready
         mCallback.calculationFinished();
         Log.d(LOG_TAG, "<< run");
     }
@@ -122,35 +121,49 @@ public class CalculatingThread extends Thread {
      * this method finds the independent sub-graphs in the graph (finds on how many parts graph is divided) it user search across
      * method
      * 
-     * @return
+     * @return number of independent subgraphs
      */
     private int countSubGraphs() {
         Log.d(LOG_TAG, ">> countSubGraphs");
-        // FIXME concurent modification exception - but it is late and I want to commit
-        if (true)
-            return 1;
-        // make a copy of vertexes
-        Vector<GVertex> vert = new Vector<GVertex>(mVertexSet);
+        // make a table of vertexes from set
+        GVertex[] vert = mVertexSet.toArray(new GVertex[0]);
         int subGraphCount = 0;
-        for (Iterator<GVertex> iterator = vert.iterator(); iterator.hasNext();) {
-            GVertex gVertex = (GVertex) iterator.next();
-            ++subGraphCount;
-            gotoAndSet(gVertex, vert);
+        for (int i = 0; i < vert.length; ++i) {
+            if (vert[i] != null) { // increment and check only if vertex is not marked visited
+                ++subGraphCount;
+                goToVertex(vert[i], vert);
+            }
         }
         Log.d(LOG_TAG, "<< countSubGraphs result=" + subGraphCount);
         return subGraphCount;
     }
 
-    private void gotoAndSet(GVertex v, Vector<GVertex> vs) {
-        // to simplify the solution we will use vertex coord as vertex signed/unsigned status as null(signed) / !null(unsigned)
-        if (v.getCoord() != null) {
-            v.setCoord(null);
-            vs.remove(v);
-            for (Iterator<GVertex> iterator = v.getNeighbours().iterator(); iterator.hasNext();) {
-                GVertex gVertex = (GVertex) iterator.next();
-                gotoAndSet(gVertex, vs);
+    private void goToVertex(GVertex v, GVertex[] vs) {
+        // each 'marked' vertex is nullified in 'vs' table
+        markVisided(v, vs);
+        for (Iterator<GVertex> iterator = v.getNeighbours().iterator(); iterator.hasNext();) {
+            GVertex gVertex = (GVertex) iterator.next();
+            if (!checkWasVisited(gVertex, vs)) {
+                goToVertex(gVertex, vs);
             }
         }
+    }
+
+    private void markVisided(GVertex v, GVertex[] vs) {
+        for (int i = 0; i < vs.length; ++i) {
+            if (v != null && vs[i] != null && vs[i].getVertexId() == v.getVertexId()) {
+                vs[i] = null; // 'remove' from table - means is checked
+            }
+        }
+    }
+
+    private boolean checkWasVisited(GVertex v, GVertex[] vs) {
+        for (int i = 0; i < vs.length; ++i) {
+            if (v != null && vs[i] != null && vs[i].getVertexId() == v.getVertexId()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
