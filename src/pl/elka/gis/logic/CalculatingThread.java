@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.Vector;
 
 import org.apache.commons.collections.MapIterator;
 import org.apache.commons.collections.buffer.PriorityBuffer;
@@ -54,15 +55,19 @@ public class CalculatingThread extends Thread {
                 useFullVersion = false;
                 break;
             case PREPROCESSING_ERROR_GENERAL :
+                mResultSet.clear();
                 mCallback.calculationError("PREPROCESSING_ERROR_GENERAL");
                 return;
             case PREPROCESSING_DONE_ERR_NO_CENTERS :
+                mResultSet.clear();
                 mCallback.calculationError("PREPROCESSING_DONE_ERR_NO_CENTERS");
                 return;
             case PREPROCESSING_DONE_ERR_NO_VERTEXES :
+                mResultSet.clear();
                 mCallback.calculationError("PREPROCESSING_DONE_ERR_NO_VERTEXES");
                 return;
             case PREPROCESSING_DONE_ERR_TOO_MANY_SUBGRAPHS :
+                mResultSet.clear();
                 mCallback.calculationError("PREPROCESSING_DONE_ERR_TOO_MANY_SUBGRAPHS");
                 return;
             case PREPROCESSING_DONE_NO_EDGE_CASE_FOUND :
@@ -70,7 +75,7 @@ public class CalculatingThread extends Thread {
                 break;
         }
         findCentersAlgorythm(useFullVersion);
-        fakeCountCentersAlgorithm(); // FIXME delete this when ready
+        // fakeCountCentersAlgorithm(); // FIXME delete this when ready
         mCallback.calculationFinished();
         Log.d(LOG_TAG, "<< run");
     }
@@ -91,21 +96,24 @@ public class CalculatingThread extends Thread {
             return ResultFlag.PREPROCESSING_DONE_ERR_TOO_MANY_SUBGRAPHS;
         }
         if (mVertexSet.size() <= 0) {
+            mResultSet.setLongestPath(0);
             return ResultFlag.PREPROCESSING_DONE_CENTERS_MORE_OR_EQUAL_VERTEXES; // and they are located int the result set
         }
         if (mCentersCount <= 0) {
             return ResultFlag.PREPROCESSING_DONE_ERR_TOO_MANY_SUBGRAPHS;
         }
         if (mVertexSet.size() <= mCentersCount) {
+            mResultSet.setLongestPath(0);
             mResultSet.getCentralVertexSet().addAll(mVertexSet); // so now just put rest vertexes into result set
             return ResultFlag.PREPROCESSING_DONE_CENTERS_MORE_OR_EQUAL_VERTEXES; // and they are located int the result set
         }
-        if (countSubGraphs() > mCentersCount) {
+        int subG = 0;
+        if ((subG = countSubGraphs()) >= mCentersCount) {
+            if (subG == mCentersCount) {
+                return ResultFlag.PREPROCESSING_DONE_CENTERS_EQUAL_SUBGRAPHS; // in this case we just need to put 1 center in each
+                // subgraph
+            }
             return ResultFlag.PREPROCESSING_DONE_ERR_TOO_MANY_SUBGRAPHS;
-        }
-        if (countSubGraphs() == mCentersCount) {
-            return ResultFlag.PREPROCESSING_DONE_CENTERS_EQUAL_SUBGRAPHS; // in this case we just need to put 1 center in each
-                                                                          // subgraph
         }
         return ResultFlag.PREPROCESSING_DONE_NO_EDGE_CASE_FOUND;
     }
@@ -117,8 +125,32 @@ public class CalculatingThread extends Thread {
      * @return
      */
     private int countSubGraphs() {
-        // TODO pasu: przeszukiwanie wszerz
-        return 0; // error - minimum is 1
+        Log.d(LOG_TAG, ">> countSubGraphs");
+        // FIXME concurent modification exception - but it is late and I want to commit
+        if (true)
+            return 1;
+        // make a copy of vertexes
+        Vector<GVertex> vert = new Vector<GVertex>(mVertexSet);
+        int subGraphCount = 0;
+        for (Iterator<GVertex> iterator = vert.iterator(); iterator.hasNext();) {
+            GVertex gVertex = (GVertex) iterator.next();
+            ++subGraphCount;
+            gotoAndSet(gVertex, vert);
+        }
+        Log.d(LOG_TAG, "<< countSubGraphs result=" + subGraphCount);
+        return subGraphCount;
+    }
+
+    private void gotoAndSet(GVertex v, Vector<GVertex> vs) {
+        // to simplify the solution we will use vertex coord as vertex signed/unsigned status as null(signed) / !null(unsigned)
+        if (v.getCoord() != null) {
+            v.setCoord(null);
+            vs.remove(v);
+            for (Iterator<GVertex> iterator = v.getNeighbours().iterator(); iterator.hasNext();) {
+                GVertex gVertex = (GVertex) iterator.next();
+                gotoAndSet(gVertex, vs);
+            }
+        }
     }
 
     /**
@@ -129,7 +161,7 @@ public class CalculatingThread extends Thread {
     private boolean putCentersToIsolatedVertexes() {
         for (Iterator<GVertex> iterator = mVertexSet.iterator(); iterator.hasNext();) {
             GVertex v = iterator.next();
-            if (v.getNeighboursIds().isEmpty()) {
+            if (v.getNeighbours().isEmpty()) {
                 if (mCentersCount == 0) {
                     return false; // unable to deploy centers in isolated vertexes - not enough centers
                 }
@@ -137,9 +169,11 @@ public class CalculatingThread extends Thread {
                 v.setShortestPath(0); // path to self is 0
                 mResultSet.getCentralVertexSet().add(v);
                 --mCentersCount;
+                Log.d(LOG_TAG, "Isolated verted delete: vertexID=" + v.getVertexId());
                 iterator.remove(); // remove this vertex from the set
             }
         }
+        mResultSet.setLongestPath(Integer.MAX_VALUE);
         return true;
     }
 
@@ -224,4 +258,36 @@ public class CalculatingThread extends Thread {
         // data
         // ////////////////////////////////////////////////////////////////////testing
     }
+    // concurent modification safe
+    // private boolean putCentersToIsolatedVertexes() {
+    // boolean[] indexesToRemove = new boolean[mVertexSet.size()];
+    // int index = 0;
+    // for (Iterator<GVertex> iterator = mVertexSet.iterator(); iterator.hasNext();) {
+    // GVertex v = iterator.next();
+    // if (v.getNeighbours().isEmpty()) {
+    // if (mCentersCount == 0) {
+    // return false; // unable to deploy centers in isolated vertexes - not enough centers
+    // }
+    // v.setNearestCenter(v); // center as self
+    // v.setShortestPath(0); // path to self is 0
+    // mResultSet.getCentralVertexSet().add(v);
+    // --mCentersCount;
+    // indexesToRemove[index] = true; // mark this vertex to be removed
+    // } else {
+    // indexesToRemove[index] = false; // mark this vertex not to be removed
+    // }
+    // ++index;
+    // }
+    // index = 0;
+    // for (Iterator<GVertex> iterator = mVertexSet.iterator(); iterator.hasNext();) {
+    // GVertex v = iterator.next();
+    // if (indexesToRemove[index] == true) {
+    // Log.d(LOG_TAG, "delete vertexID=" + v.getVertexId());
+    // iterator.remove();
+    // }
+    // ++index;
+    // }
+    // mResultSet.setLongestPath(Integer.MAX_VALUE);
+    // return true;
+    // }
 }

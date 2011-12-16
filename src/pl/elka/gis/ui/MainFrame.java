@@ -162,6 +162,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
                 if ((val != null) && (val.length() > 0)) {
                     try {
                         int centersCount = Integer.parseInt(val);
+                        mController.resetControllerWithSameData();
                         mController.setCentersCount(centersCount);
                         startGraphProcessing();
                         mController.countGraphData(centersCount, MainFrame.this);
