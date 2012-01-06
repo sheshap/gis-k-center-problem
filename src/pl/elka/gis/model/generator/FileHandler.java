@@ -86,7 +86,7 @@ public class FileHandler {
     }
 
     public static void writeFileContent(String filename, Vector<GVertex> vertexes, Set<GEdge> edges) throws IOException {
-        FileWriter outFile = new FileWriter(AppConstants.GRAPHS_FOLDER_PATH + filename + AppConstants.GRAPHS_EXTENSION);
+        FileWriter outFile = new FileWriter(AppConstants.DEFAULT_FOLDER_PATH + filename + "." + AppConstants.DEFAULT_EXTENSION);
         PrintWriter out = new PrintWriter(outFile);
         out.println(vertexes.size() + " " + edges.size());
         GVertex ver;

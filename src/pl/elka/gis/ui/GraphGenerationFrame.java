@@ -93,7 +93,7 @@ public class GraphGenerationFrame extends JFrame {
                 if (generationSuccessful) {
                     JOptionPane
                             .showMessageDialog(GraphGenerationFrame.this, "Saved generated graph to \""
-                                    + mLines[0].getTextField().getText() + AppConstants.GRAPHS_EXTENSION + "\" file.", "Done", JOptionPane.INFORMATION_MESSAGE);
+                                    + mLines[0].getTextField().getText() + "." + AppConstants.DEFAULT_EXTENSION + "\" file.", "Done", JOptionPane.INFORMATION_MESSAGE);
                 } else {
                     JOptionPane
                             .showMessageDialog(GraphGenerationFrame.this, "Error generating graph.", "Error", JOptionPane.ERROR_MESSAGE);

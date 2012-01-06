@@ -80,7 +80,8 @@ public class GraphPaintingPanel extends JPanel {
             mLongestPathEdges.addAll(mController.getResultSet().getLongestPathEdgesSet());
             Log.d(LOG_TAG, "mLongestPathEdges.size() == " + mLongestPathEdges.size());
         }
-        repaint();
+        revalidate();
+        // repaint();
     }
 
     private GVertex findVertexWithId(int id, Vector<GVertex> vec) {
