@@ -56,7 +56,7 @@ public class DataGenerator {
             throw new DataValidationException("File name is invalid");
         }
         FileHandler.writeFileContent(filename, mVertexes, mEdges);
-        Log.d(LOG_TAG, "generated data savet to: " + filename + AppConstants.GRAPHS_EXTENSION);
+        Log.d(LOG_TAG, "generated data savet to: " + filename + "." + AppConstants.DEFAULT_EXTENSION);
     }
 
     private boolean isDistansBetweenPointsSufficient(int newX, int newY) {
