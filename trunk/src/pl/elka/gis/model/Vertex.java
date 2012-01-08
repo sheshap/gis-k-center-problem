@@ -48,6 +48,13 @@ public class Vertex {
         return mNeighbours != null && !mNeighbours.isEmpty();
     }
 
+    public boolean hasNeighbour(Vertex v) {
+        if (!hasNeighbours())
+            return false;
+
+        return getOrCreateNeighbours().contains(v);
+    }
+
     public Set<Vertex> getNeighbours() {
         if (hasNeighbours())
             return Collections.unmodifiableSet(mNeighbours);
@@ -88,6 +95,10 @@ public class Vertex {
         this.mNearestCenter = nearestCenter;
     }
 
+    public int distance(Vertex v) {
+        return distance(this, v);
+    }
+
     public static int distance(Vertex v1, Vertex v2) {
         if (v1 == null || v2 == null)
             return -1;
@@ -98,6 +109,14 @@ public class Vertex {
         int x = Math.abs(v1.getX() - v2.getX());
         int y = Math.abs(v1.getY() - v2.getY());
         return (int) Math.sqrt(x * x + y * y);
+    }
+
+    public static void setAsNeighbours(Vertex v1, Vertex v2) {
+        if (v1 == null || v2 == null || ObjectUtils.equals(v1, v2))
+            return;
+
+        v1.addNeightbour(v2);
+        v2.addNeightbour(v1);
     }
 
     @Override
