@@ -43,6 +43,24 @@ public class Edge {
         return false;
     }
 
+    public boolean setVertexes(final Vertex[] vertexes) {
+        if (vertexes == null)
+            throw new NullPointerException();
+
+        if (vertexes.length <= mVertex1Id || vertexes.length <= mVertex2Id)
+            throw new ArrayIndexOutOfBoundsException();
+
+        mVertex1 = vertexes[mVertex1Id];
+        mVertex2 = vertexes[mVertex2Id];
+
+        if (mVertex1 != null && mVertex2 != null) {
+            mWeight = Vertex.distance(mVertex1, mVertex2);
+            return true;
+        }
+
+        return false;
+    }
+
     public Pair<Integer, Integer> getVertexIds() {
         return Pair.of(mVertex1Id, mVertex2Id);
     }
