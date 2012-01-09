@@ -23,8 +23,9 @@ import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 
 import pl.elka.gis.logic.Controller;
+import pl.elka.gis.logic.GraphResolver;
+import pl.elka.gis.model.Graph;
 import pl.elka.gis.model.ResultSet;
-import pl.elka.gis.model.generator.FileHandler;
 import pl.elka.gis.ui.components.CalculationProgressDialog;
 import pl.elka.gis.ui.components.GraphPaintingPanel;
 import pl.elka.gis.ui.components.ProgressCallback;
@@ -51,14 +52,16 @@ public class MainFrame extends JFrame implements ProgressCallback {
     private ScrollPane mScrollPane;
     private long mGraphCalculateStartTime;
     private long mGraphCalculateEndTime;
+    private Graph mGraph;
+    private GraphResolver mGraphResolver;
 
     public MainFrame() {
         super(APP_NAME);
         WindowUtilities.setNativeLookAndFeel();
         mScreenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setLocation(mScreenSize.width / 8, mScreenSize.height / 8);
-        setSize(mScreenSize.width * 3 / 4, mScreenSize.height * 3 / 4);
-        setPreferredSize(new Dimension(mScreenSize.width * 3 / 4, mScreenSize.height * 3 / 4));
+        setSize(mScreenSize.width * 1 / 4, mScreenSize.height * 1 / 4);
+        setPreferredSize(new Dimension(mScreenSize.width * 1 / 4, mScreenSize.height * 1 / 4));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
         ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
@@ -127,6 +130,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
                 }
                 mLastStatusText = "Idle";
                 mStatusLabel.setText(mLastStatusText);
+                mIsGraphLoaded = false;
             }
         });
         openItem.addActionListener(new ActionListener() {
@@ -140,15 +144,19 @@ public class MainFrame extends JFrame implements ProgressCallback {
                 File f = FilePickingUtils.openFileChooser(MainFrame.this);
                 if (f != null) {
                     try {
-                        mController.initController(); // remove old data
-                        FileHandler.readSourceFileContent(f, mController);
-                        getOrCreateGraphPanel().setPlainGraphController(mController);
+                        mGraph = Graph.fromFile(f);
+                        mGraphResolver = new GraphResolver(mGraph);
+
+                        // mController.initController(); // remove old data
+                        // FileHandler.readSourceFileContent(f, mController);
+                        // getOrCreateGraphPanel().setPlainGraphController(mController);
                         mIsGraphLoaded = true;
-                        mLastStatusText = "File: " + f.getName() + ", Vertexes=" + mController.getVertexSet().size() + ", Edges="
-                                + mController.getEdgesMap().size();
-                        mStatusLabel.setText(mLastStatusText);
-                        mScrollPane.add(mGraphPanel);
-                        mGraphPanel.refreshGraph();
+                        // mLastStatusText = "File: " + f.getName() + ", Vertexes=" + mController.getVertexSet().size() +
+                        // ", Edges="
+                        // + mController.getEdgesMap().size();
+                        // mStatusLabel.setText(mLastStatusText);
+                        // mScrollPane.add(mGraphPanel);
+                        // mGraphPanel.refreshGraph();
 
                     } catch (FileNotFoundException e1) {
                         e1.printStackTrace();
@@ -189,11 +197,14 @@ public class MainFrame extends JFrame implements ProgressCallback {
                 if ((val != null) && (val.length() > 0)) {
                     try {
                         int centersCount = Integer.parseInt(val);
-                        mController.resetControllerWithSameData();
-                        mController.setCentersCount(centersCount);
-                        startGraphProcessing();
-                        mController.countGraphData(centersCount, MainFrame.this);
-                        mProgressDialog.setVisible(true);
+
+                        mGraphResolver.resolve(centersCount, MainFrame.this);
+
+                        // mController.resetControllerWithSameData();
+                        // mController.setCentersCount(centersCount);
+                        // startGraphProcessing();
+                        // mController.countGraphData(centersCount, MainFrame.this);
+                        // mProgressDialog.setVisible(true);
                     } catch (NumberFormatException ex) {
                         JOptionPane
                                 .showMessageDialog(MainFrame.this, "Wrong centers number.", "Error", JOptionPane.ERROR_MESSAGE);

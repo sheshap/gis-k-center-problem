@@ -31,6 +31,8 @@ public class Graph {
         return Collections.unmodifiableSet(mVertexes);
     }
 
+    /******************** SUBGRAPHS ********************/
+
     public int getSubgraphsCount() {
         maybeCountSubgraphs();
         return mSubgraphsCount;
@@ -52,26 +54,32 @@ public class Graph {
         boolean[] marked = new boolean[mVertexes.size()];
 
         for (Vertex v : mVertexes) {
-            if (!marked[v.getId()]) {
+            Log.d(LOG_TAG, "for vid:" + v.getId() + " marked:" + marked[v.getId() - 1]);
+
+            if (!marked[v.getId() - 1]) {
                 mSubgraphsCount++;
-                marked[v.getId()] = true;
+                marked[v.getId() - 1] = true;
                 visitAllNeighbours(v, marked);
             }
         }
     }
 
     private void visitAllNeighbours(Vertex v, boolean[] marked) {
+        Log.d(LOG_TAG, Log.getCurrentMethodName() + " vid:" + v.getId());
+
         Set<Vertex> neighbours = v.getNeighbours();
         for (Vertex n : neighbours) {
-            if (!marked[n.getId()]) {
-                marked[n.getId()] = true;
+            if (!marked[n.getId() - 1]) {
+                marked[n.getId() - 1] = true;
                 visitAllNeighbours(n, marked);
             }
         }
     }
 
+    /******************** FILE LOADING ********************/
+
     public static Graph fromFile(File file) throws FileNotFoundException {
-        Log.d(LOG_TAG, Log.getCurrentMethodName());
+        // Log.d(LOG_TAG, Log.getCurrentMethodName());
 
         if (file == null || !file.exists())
             throw new NullPointerException();
@@ -86,14 +94,14 @@ public class Graph {
 
         Vertex[] vertexes = new Vertex[vertexCount];
 
-        for (int i = 0; i < vertexCount; i++) {
+        for (int i = 1; i <= vertexCount; i++) {
             int x = scanner.nextInt(), y = scanner.nextInt();
-            vertexes[i] = new Vertex(i, x, y);
+            vertexes[i - 1] = new Vertex(i, x, y);
         }
 
         for (int i = 0; i < edgeCount; i++) {
             int v1Id = scanner.nextInt(), v2Id = scanner.nextInt();
-            Vertex v1 = vertexes[v1Id], v2 = vertexes[v2Id];
+            Vertex v1 = vertexes[v1Id - 1], v2 = vertexes[v2Id - 1];
             Vertex.setAsNeighbours(v1, v2);
         }
 

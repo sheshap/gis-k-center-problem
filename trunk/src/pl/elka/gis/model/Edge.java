@@ -47,11 +47,11 @@ public class Edge {
         if (vertexes == null)
             throw new NullPointerException();
 
-        if (vertexes.length <= mVertex1Id || vertexes.length <= mVertex2Id)
+        if (vertexes.length <= mVertex1Id - 1 || vertexes.length <= mVertex2Id - 1)
             throw new ArrayIndexOutOfBoundsException();
 
-        mVertex1 = vertexes[mVertex1Id];
-        mVertex2 = vertexes[mVertex2Id];
+        mVertex1 = vertexes[mVertex1Id - 1];
+        mVertex2 = vertexes[mVertex2Id - 1];
 
         if (mVertex1 != null && mVertex2 != null) {
             mWeight = Vertex.distance(mVertex1, mVertex2);
