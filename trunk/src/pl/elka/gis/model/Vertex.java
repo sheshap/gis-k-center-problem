@@ -119,12 +119,13 @@ public class Vertex {
         return (int) Math.sqrt(x * x + y * y);
     }
 
-    public static void setAsNeighbours(Vertex v1, Vertex v2) {
+    public static boolean setAsNeighbours(Vertex v1, Vertex v2) {
         if (v1 == null || v2 == null || ObjectUtils.equals(v1, v2))
-            return;
+            return false;
 
         v1.addNeightbour(v2);
         v2.addNeightbour(v1);
+        return true;
     }
 
     @Override

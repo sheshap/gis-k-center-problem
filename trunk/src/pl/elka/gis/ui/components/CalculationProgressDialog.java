@@ -3,30 +3,40 @@ package pl.elka.gis.ui.components;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Point;
 
 import javax.swing.BoxLayout;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
+import pl.elka.gis.model.Graph;
+
 public class CalculationProgressDialog extends JDialog {
 
     private Gauge mGauge;
 
-    public CalculationProgressDialog(JFrame parentFrame, String title, boolean modal, int vertexC, int edgeC, int centerC) {
-        super(parentFrame, title, modal);
-        int w = 300, h = 120;
-        setLocation(parentFrame.getLocationOnScreen().x + 200, parentFrame.getLocationOnScreen().y + 120);
+    public CalculationProgressDialog(JFrame parentFrame, String title, Graph graph, int centers) {
+        super(parentFrame, title, true);
+        Dimension parentSize = parentFrame.getSize();
+        int w = parentSize.width / 3, h = parentSize.height / 3;
         setSize(w, h);
+        Point locationOnScreen = parentFrame.getLocationOnScreen();
+        setLocation(locationOnScreen.x + parentSize.width / 3, locationOnScreen.y + parentSize.height / 3);
+
         Container pane = getContentPane();
-        pane.setLayout(new BoxLayout(pane, BoxLayout.Y_AXIS));
+
         mGauge = new Gauge(Color.GREEN);
-        JLabel l1 = new JLabel("Vertexes: " + vertexC);
+
+        JLabel l1 = new JLabel("Vertexes: " + graph.getVertexesCount());
         l1.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel l2 = new JLabel("Edges: " + edgeC);
+        JLabel l2 = new JLabel("Edges: " + graph.getEdgesCount());
         l2.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel l3 = new JLabel("Centers: " + centerC);
+        JLabel l3 = new JLabel("Centers: " + centers);
         l3.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        pane.setLayout(new BoxLayout(pane, BoxLayout.Y_AXIS));
         pane.add(l1);
         pane.add(l2);
         pane.add(l3);
