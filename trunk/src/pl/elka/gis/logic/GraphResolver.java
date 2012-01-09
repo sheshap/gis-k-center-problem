@@ -104,7 +104,10 @@ public class GraphResolver {
     private String printCentrals(Vertex[] vertexes) {
         StringBuilder sb = new StringBuilder();
         for (Vertex v : vertexes) {
-            sb.append(v.getId());
+            if (v == null)
+                sb.append("-");
+            else
+                sb.append(v.getId());
             sb.append(" ");
         }
 
@@ -114,11 +117,27 @@ public class GraphResolver {
     // FIXME: just temporary on arrays in order to check if it's working
 
     private int findCentral(int currentLongest, final Set<Vertex> vertexes, boolean[] notAvailable, int centralsLeft, int[] d, Vertex[] center, Vertex[] result) {
-        Log.d(LOG_TAG, Log.getCurrentMethodName() + " centrals: " + centralsLeft + " " + Arrays.toString(notAvailable) + " "
-                + Arrays.toString(d));
+        // Log.d(LOG_TAG, Log.getCurrentMethodName() + " centrals: " + centralsLeft + " " + Arrays.toString(notAvailable) + " "
+        // + Arrays.toString(d));
+
+        Log
+                .d(LOG_TAG, String
+                        .format("left: %d, notAvailable: %s, d: %s, currentLongest: %d, centers: %s, result: %s", centralsLeft, Arrays
+                                .toString(notAvailable), Arrays.toString(d), currentLongest, printCentrals(center), printCentrals(result)));
 
         if (centralsLeft == 0) {
-            return findMax(d);
+            int max = findMax(d);
+
+            Log.d(LOG_TAG, "FindMax = " + max);
+
+            if (max < currentLongest) {
+                for (int i = 0; i < center.length; i++) {
+                    result[i] = center[i];
+                }
+                currentLongest = max;
+            }
+
+            return currentLongest;
         }
 
         for (Vertex v : vertexes) {
@@ -131,16 +150,29 @@ public class GraphResolver {
 
             countDijkstra(v, vertexes, tmpD, tmpCenter, notAvailable);
             notAvailable[v.getId() - 1] = true;
-            int pom = findCentral(currentLongest, vertexes, notAvailable, centralsLeft - 1, tmpD, tmpCenter, result);
-            if (pom < currentLongest) {
-                Log.d(LOG_TAG, Log.getCurrentMethodName() + " RESULT: centrals: " + printCentrals(tmpCenter) + " d: "
-                        + Arrays.toString(tmpD));
-
-                for (int i = 0; i < tmpCenter.length; i++) {
-                    result[i] = tmpCenter[i];
-                }
-                currentLongest = pom;
-            }
+            currentLongest = findCentral(currentLongest, vertexes, notAvailable, centralsLeft - 1, tmpD, tmpCenter, result);
+            // if (pom < currentLongest) {
+            // // Log.d(LOG_TAG, Log.getCurrentMethodName() + " RESULT: longest: " + pom + " centrals: " +
+            // // printCentrals(tmpCenter)
+            // // + " d: " + Arrays.toString(tmpD));
+            //
+            // for (int i = 0; i < tmpCenter.length; i++) {
+            // result[i] = tmpCenter[i];
+            // }
+            // currentLongest = pom;
+            //
+            // Log
+            // .d(LOG_TAG, String
+            // .format("BETTER left: %d, notAvailable: %s, tmpD: %s, currentLongest: %d, tmpCenters: %s, result: %s",
+            // centralsLeft, Arrays
+            // .toString(notAvailable), Arrays.toString(tmpD), currentLongest, printCentrals(tmpCenter), printCentrals(result)));
+            // } else {
+            // Log
+            // .d(LOG_TAG, String
+            // .format("WORSE   left: %d, notAvailable: %s, tmpD: %s, currentLongest: %d, tmpCenters: %s, result: %s",
+            // centralsLeft, Arrays
+            // .toString(notAvailable), Arrays.toString(tmpD), currentLongest, printCentrals(tmpCenter), printCentrals(result)));
+            // }
             notAvailable[v.getId() - 1] = false;
 
         }
