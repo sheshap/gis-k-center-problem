@@ -1,6 +1,7 @@
 package pl.elka.gis.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.ScrollPane;
@@ -8,9 +9,6 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -22,53 +20,48 @@ import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 
-import pl.elka.gis.logic.Controller;
 import pl.elka.gis.logic.GraphResolver;
 import pl.elka.gis.model.Graph;
-import pl.elka.gis.model.ResultSet;
 import pl.elka.gis.ui.components.CalculationProgressDialog;
-import pl.elka.gis.ui.components.GraphPaintingPanel;
+import pl.elka.gis.ui.components.GraphPainterPanel;
 import pl.elka.gis.ui.components.ProgressCallback;
 import pl.elka.gis.utils.AppConstants;
 import pl.elka.gis.utils.FilePickingUtils;
 import pl.elka.gis.utils.Log;
 import pl.elka.gis.utils.WindowUtilities;
 
+/**
+ * @author pasu
+ * @author Andrzej Makarewicz
+ */
 public class MainFrame extends JFrame implements ProgressCallback {
 
-    private static final String LOG_TAG = "MainFrame";
+    private static final String LOG_TAG = MainFrame.class.getSimpleName();
     private static final String APP_NAME = "K-graph center solver";
-    private Dimension mScreenSize;
-    private Controller mController;
-    private boolean mIsGraphLoaded;
     private GraphGenerationFrame mGraphGenerationFrame;
     private CalculationProgressDialog mProgressDialog;
     private boolean mGraphCalculationInProgress;
-    private JMenuItem mProgressOption;
     private JLabel mStatusLabel;
     private String mLastStatusText;
-    // private GraphFrame mGraphFrame;
-    private GraphPaintingPanel mGraphPanel;
+    private GraphPainterPanel mGraphPanel;
     private ScrollPane mScrollPane;
-    private long mGraphCalculateStartTime;
-    private long mGraphCalculateEndTime;
     private Graph mGraph;
     private GraphResolver mGraphResolver;
+    private JMenuItem[] mMenuItems;
 
     public MainFrame() {
         super(APP_NAME);
         WindowUtilities.setNativeLookAndFeel();
-        mScreenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setLocation(mScreenSize.width / 8, mScreenSize.height / 8);
-        setSize(mScreenSize.width * 1 / 4, mScreenSize.height * 1 / 4);
-        setPreferredSize(new Dimension(mScreenSize.width * 1 / 4, mScreenSize.height * 1 / 4));
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        setLocation(screenSize.width / 8, screenSize.height / 8);
+        setSize(screenSize.width * 3 / 4, screenSize.height * 3 / 4);
+        setPreferredSize(new Dimension(screenSize.width * 3 / 4, screenSize.height * 3 / 4));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
         ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
 
         prepareMenu();
 
-        mController = new Controller();
         mScrollPane = new ScrollPane();
 
         mLastStatusText = "Idle";
@@ -82,58 +75,65 @@ public class MainFrame extends JFrame implements ProgressCallback {
         setVisible(true);
     }
 
-    private GraphPaintingPanel getOrCreateGraphPanel() {
+    private GraphPainterPanel getOrCreateGraphPanel() {
         if (mGraphPanel == null) {
-            mGraphPanel = new GraphPaintingPanel();
+            mGraphPanel = new GraphPainterPanel();
             mGraphPanel.setPreferredSize(new Dimension(AppConstants.MAX_X_Y_VALUE, AppConstants.MAX_X_Y_VALUE));
         }
         return mGraphPanel;
     }
 
+    private boolean isGraphLoaded() {
+        return mGraph != null;
+    }
+
+    private void setGraphOptions() {
+        boolean isGraphLoaded = isGraphLoaded();
+
+        mMenuItems[MENU_CLOSE].setEnabled(isGraphLoaded);
+        mMenuItems[MENU_COUNT].setEnabled(isGraphLoaded);
+        mMenuItems[MENU_STATS].setEnabled(isGraphLoaded);
+        mMenuItems[MENU_PROGRESS].setEnabled(isGraphLoaded && mGraphCalculationInProgress);
+    }
+
+    private static final int MENU_OPEN = 0, MENU_CLOSE = 1, MENU_EXIT = 2, MENU_GENERATE = 3, MENU_COUNT = 4, MENU_STATS = 5,
+            MENU_PROGRESS = 6;
+
     private void prepareMenu() {
+        mMenuItems = new JMenuItem[7];
+
         JMenu file = new JMenu("File");
         file.setMnemonic('F');
-        JMenuItem openItem = new JMenuItem("Open");
-        openItem.setMnemonic('O');
-        file.add(openItem);
-        JMenuItem closeItem = new JMenuItem("Close");
-        closeItem.setMnemonic('w');
-        file.add(closeItem);
-        JMenuItem exitItem = new JMenuItem("Exit");
-        exitItem.setMnemonic('x');
-        file.add(exitItem);
+
+        mMenuItems[MENU_OPEN] = new JMenuItem("Open");
+        mMenuItems[MENU_OPEN].setMnemonic('O');
+        file.add(mMenuItems[MENU_OPEN]);
+        mMenuItems[MENU_CLOSE] = new JMenuItem("Close");
+        mMenuItems[MENU_CLOSE].setMnemonic('W');
+        file.add(mMenuItems[MENU_CLOSE]);
+        mMenuItems[MENU_EXIT] = new JMenuItem("Exit");
+        mMenuItems[MENU_EXIT].setMnemonic('X');
+        file.add(mMenuItems[MENU_EXIT]);
+
         JMenu actions = new JMenu("Actions");
         actions.setMnemonic('F');
-        JMenuItem generateItem = new JMenuItem("Generate graph");
-        generateItem.setMnemonic('G');
-        actions.add(generateItem);
-        JMenuItem countGraph = new JMenuItem("Count graph");
-        countGraph.setMnemonic('C');
-        actions.add(countGraph);
-        JMenuItem stats = new JMenuItem("Statistics");
-        stats.setMnemonic('S');
-        actions.add(stats);
-        mProgressOption = new JMenuItem("Show progress");
-        mProgressOption.setMnemonic('p');
-        mProgressOption.setEnabled(false);
-        // JMenuItem showGraph = new JMenuItem("Show graph");
-        // showGraph.setMnemonic('h');
-        // actions.add(showGraph);
-        actions.add(mProgressOption);
 
-        closeItem.addActionListener(new ActionListener() {
+        mMenuItems[MENU_GENERATE] = new JMenuItem("Generate graph");
+        mMenuItems[MENU_GENERATE].setMnemonic('G');
+        actions.add(mMenuItems[MENU_GENERATE]);
+        mMenuItems[MENU_COUNT] = new JMenuItem("Count graph");
+        mMenuItems[MENU_COUNT].setMnemonic('C');
+        actions.add(mMenuItems[MENU_COUNT]);
+        mMenuItems[MENU_STATS] = new JMenuItem("Statistics");
+        mMenuItems[MENU_STATS].setMnemonic('S');
+        actions.add(mMenuItems[MENU_STATS]);
+        mMenuItems[MENU_PROGRESS] = new JMenuItem("Show progress");
+        mMenuItems[MENU_PROGRESS].setMnemonic('P');
+        actions.add(mMenuItems[MENU_PROGRESS]);
 
-            public void actionPerformed(ActionEvent e) {
-                mScrollPane.removeAll();
-                if (mGraphPanel != null) {
-                    mGraphPanel = null;
-                }
-                mLastStatusText = "Idle";
-                mStatusLabel.setText(mLastStatusText);
-                mIsGraphLoaded = false;
-            }
-        });
-        openItem.addActionListener(new ActionListener() {
+        setGraphOptions();
+
+        mMenuItems[MENU_OPEN].addActionListener(new ActionListener() {
 
             public void actionPerformed(ActionEvent e) {
                 if (mGraphCalculationInProgress) {
@@ -147,31 +147,47 @@ public class MainFrame extends JFrame implements ProgressCallback {
                         mGraph = Graph.fromFile(f);
                         mGraphResolver = new GraphResolver(mGraph);
 
-                        // mController.initController(); // remove old data
-                        // FileHandler.readSourceFileContent(f, mController);
-                        // getOrCreateGraphPanel().setPlainGraphController(mController);
-                        mIsGraphLoaded = true;
-                        // mLastStatusText = "File: " + f.getName() + ", Vertexes=" + mController.getVertexSet().size() +
-                        // ", Edges="
-                        // + mController.getEdgesMap().size();
-                        // mStatusLabel.setText(mLastStatusText);
-                        // mScrollPane.add(mGraphPanel);
-                        // mGraphPanel.refreshGraph();
+                        mLastStatusText = String.format("Graph: %s, vertexes: %d, edges: %d", f.getName(), mGraph
+                                .getVertexes()
+                                .size(), mGraph.getEdges().size());
+                        mStatusLabel.setText(mLastStatusText);
 
-                    } catch (FileNotFoundException e1) {
+                        GraphPainterPanel graphPanel = getOrCreateGraphPanel();
+                        graphPanel.setGraph(mGraph);
+                        mScrollPane.add(graphPanel);
+                        graphPanel.revalidate();
+
+                        setGraphOptions();
+                    } catch (Exception e1) {
                         e1.printStackTrace();
                     }
                 }
             }
         });
-        exitItem.addActionListener(new ActionListener() {
+
+        mMenuItems[MENU_CLOSE].addActionListener(new ActionListener() {
+
+            public void actionPerformed(ActionEvent e) {
+                mScrollPane.removeAll();
+                mGraphPanel = null;
+                mGraph = null;
+
+                mLastStatusText = "Idle";
+                mStatusLabel.setText(mLastStatusText);
+
+                setGraphOptions();
+            }
+        });
+
+        mMenuItems[MENU_EXIT].addActionListener(new ActionListener() {
 
             public void actionPerformed(ActionEvent e) {
                 System.exit(0);
             }
         });
+
         // actions menu
-        generateItem.addActionListener(new ActionListener() {
+        mMenuItems[MENU_GENERATE].addActionListener(new ActionListener() {
 
             public void actionPerformed(ActionEvent e) {
                 if (mGraphGenerationFrame != null) {
@@ -180,10 +196,10 @@ public class MainFrame extends JFrame implements ProgressCallback {
                 mGraphGenerationFrame = new GraphGenerationFrame(MainFrame.this.getLocationOnScreen());
             }
         });
-        countGraph.addActionListener(new ActionListener() {
+        mMenuItems[MENU_COUNT].addActionListener(new ActionListener() {
 
             public void actionPerformed(ActionEvent e) {
-                if (!mIsGraphLoaded) {
+                if (!isGraphLoaded()) {
                     JOptionPane.showMessageDialog(MainFrame.this, "No graph loaded.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -197,14 +213,8 @@ public class MainFrame extends JFrame implements ProgressCallback {
                 if ((val != null) && (val.length() > 0)) {
                     try {
                         int centersCount = Integer.parseInt(val);
-
                         mGraphResolver.resolve(centersCount, MainFrame.this);
 
-                        // mController.resetControllerWithSameData();
-                        // mController.setCentersCount(centersCount);
-                        // startGraphProcessing();
-                        // mController.countGraphData(centersCount, MainFrame.this);
-                        // mProgressDialog.setVisible(true);
                     } catch (NumberFormatException ex) {
                         JOptionPane
                                 .showMessageDialog(MainFrame.this, "Wrong centers number.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -213,27 +223,29 @@ public class MainFrame extends JFrame implements ProgressCallback {
                 }
             }
         });
-        stats.addActionListener(new ActionListener() {
+        mMenuItems[MENU_STATS].addActionListener(new ActionListener() {
 
             public void actionPerformed(ActionEvent e) {
-                if (!mIsGraphLoaded) {
+                if (!isGraphLoaded()) {
                     JOptionPane.showMessageDialog(MainFrame.this, "No graph loaded.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                showStatsDialog();
-                // print all data in the console
-                Log.d(LOG_TAG, mController.getControllerData());
+
+                showStatsDialog(MainFrame.this, mGraph);
             }
         });
-        mProgressOption.addActionListener(new ActionListener() {
+        mMenuItems[MENU_PROGRESS].addActionListener(new ActionListener() {
 
             public void actionPerformed(ActionEvent e) {
+                if (!isGraphLoaded()) {
+                    JOptionPane.showMessageDialog(MainFrame.this, "No graph loaded.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
                 if (mProgressDialog != null) {
                     mProgressDialog.setVisible(true);
                 } else {
-                    mProgressDialog = new CalculationProgressDialog(MainFrame.this, "Calculation progress", true, mController
-                            .getVertexSet()
-                            .size(), mController.getEdgesMap().size(), mController.getCentersCount());
+                    mProgressDialog = new CalculationProgressDialog(MainFrame.this, "Calculation progress", mGraph, 1);
                     mProgressDialog.setVisible(true);
                 }
             }
@@ -244,72 +256,82 @@ public class MainFrame extends JFrame implements ProgressCallback {
         bar.add(actions);
     }
 
-    private void showStatsDialog() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Vertexes count: " + mController.getVertexSet().size() + "\n");
-        sb.append("Edges count: " + mController.getEdgesMap().size() + "\n");
-        sb.append("Centers count: " + mController.getCentersCount() + "\n");
-        ResultSet lastResult = mController.getResultSet();
-        sb.append("Centers in vertexes: " + lastResult.getCentersSetAsString() + "\n");
-        sb.append("Longest path vertexes: " + lastResult.getLongestPathVertexSetAsString() + "\n");
-        sb.append("Longest path edges: " + lastResult.getLongestPathEdgesSetAsString() + "\n");
-        sb.append("Longest path weight: " + lastResult.getLongestPath() + "\n");
-        if (mGraphCalculateStartTime != 0 && mGraphCalculateEndTime != 0) {
-            long calTime = mGraphCalculateEndTime - mGraphCalculateStartTime;
-            SimpleDateFormat sdf = new SimpleDateFormat("mm:ss.ms");
-            Date resultdate = new Date(calTime);
-            sb.append("Calculation time: " + sdf.format(resultdate) + "\n");
-        }
-        JOptionPane.showMessageDialog(MainFrame.this, sb.toString(), "Statistics", JOptionPane.INFORMATION_MESSAGE);
-    }
-
     private void startGraphProcessing() {
         if (mGraphGenerationFrame != null) {
-            mGraphGenerationFrame.dispose(); // dispose this dialog
+            mGraphGenerationFrame.dispose();
         }
-        mGraphCalculateStartTime = mGraphCalculateEndTime = 0;
         mGraphCalculationInProgress = true;
-        mProgressOption.setEnabled(true);
-        mGraphCalculateStartTime = System.currentTimeMillis();
-        mProgressDialog = new CalculationProgressDialog(this, "Calculation progress", true, mController.getVertexSet().size(), mController
-                .getEdgesMap()
-                .size(), mController.getCentersCount());
+        mProgressDialog = new CalculationProgressDialog(this, "Calculation progress", mGraph, 1);
+        mProgressDialog.setVisible(true);
     }
+
+    private float mProgress = 0.0f;
 
     @Override
     public void updateProgress(float progressValue) {
-        Log.d(LOG_TAG, "updateProgress=" + progressValue);
+        Log.d(LOG_TAG, Log.getCurrentMethodName() + progressValue);
+
         if (mProgressDialog != null) {
             mProgressDialog.updateProgress(progressValue);
         }
-        mStatusLabel.setText("  Progress " + progressValue + "%");
+        mStatusLabel.setText("Progress " + progressValue + "%");
+    }
+
+    @Override
+    public void increaseProgress(float progressToAdd) {
+        Log.d(LOG_TAG, Log.getCurrentMethodName());
+
+        mProgress += progressToAdd;
+        if (mProgress > 100) {
+            mProgress = 100;
+        }
+        updateProgress(mProgress);
     }
 
     @Override
     public void calculationError(String errorMessage) {
-        Log.d(LOG_TAG, "calculationError=" + errorMessage);
-        mGraphCalculateEndTime = System.currentTimeMillis();
+        Log.d(LOG_TAG, Log.getCurrentMethodName() + errorMessage);
+
         if (mProgressDialog != null) {
             mProgressDialog.dispose();
         }
         JOptionPane.showMessageDialog(MainFrame.this, errorMessage, "Error", JOptionPane.ERROR_MESSAGE);
         mGraphCalculationInProgress = false;
-        mProgressOption.setEnabled(false);
         mStatusLabel.setText(mLastStatusText);
+        setGraphOptions();
     }
 
     @Override
     public void calculationFinished() {
-        Log.d(LOG_TAG, "calculationFinished");
-        mGraphCalculateEndTime = System.currentTimeMillis();
+        Log.d(LOG_TAG, Log.getCurrentMethodName());
+
         if (mProgressDialog != null) {
             mProgressDialog.dispose();
         }
-        mGraphPanel.refreshGraph();
-        // mGraphFrame.refreshGraph();
+        // mGraphPanel.refreshGraph();
+
         mGraphCalculationInProgress = false;
-        mProgressOption.setEnabled(false);
         mStatusLabel.setText(mLastStatusText);
-        showStatsDialog();
+
+        setGraphOptions();
+        showStatsDialog(MainFrame.this, mGraph);
+    }
+
+    private static void showStatsDialog(Component parentComponent, Graph graph) {
+        if (parentComponent == null)
+            return;
+
+        if (graph == null) {
+            JOptionPane.showMessageDialog(parentComponent, "Error showing graph statistics.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Vertexes: ").append(graph.getVertexes().size()).append("\n");
+        sb.append("Edges: ").append(graph.getEdges().size()).append("\n");
+        sb.append("Subgraphs: ").append(graph.getSubgraphsCount() + 1).append("\n");
+
+        JOptionPane.showMessageDialog(parentComponent, sb.toString(), "Statistics", JOptionPane.INFORMATION_MESSAGE);
     }
 }

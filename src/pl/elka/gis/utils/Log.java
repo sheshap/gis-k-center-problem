@@ -30,7 +30,7 @@ public class Log {
     public static String getCurrentMethodName() {
         StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 
-        return String.format("%s()", stackTraceElements[2].getMethodName());
+        return String.format("%s() ", stackTraceElements[2].getMethodName());
     }
 
     private static String getCallerClassName(int level) {

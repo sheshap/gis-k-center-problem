@@ -55,7 +55,7 @@ public class GraphResolver {
             case INSUFFICIENT_VERTEXES :
             case TOO_MANY_SUBGRAPHS :
                 Log.d(LOG_TAG, Log.getCurrentMethodName() + " Calculation error: " + mResultCase.name());
-                // callback.calculationError(mResultCase.name());
+                callback.calculationError(mResultCase.name());
                 return;
             case CENTRALS_EQUALS_SUBGRAPHS :
             case DEFAULT :
@@ -80,12 +80,23 @@ public class GraphResolver {
                     }
                 }
 
-                mResult.mLongest = findCentral(Integer.MAX_VALUE, vertexes, notAvailable, centralsLeft, d, center, result);
+                int level = 0;
+                // if (centralsLeft > 1)
+                // level = 2;
+
+                float progressDiff = 100 / vertexes.size();
+                // if (level == 2) {
+                // progressDiff /= (vertexes.size() * vertexes.size());
+                // }
+
+                callback.updateProgress(0);
+
+                mResult.mLongest = findCentral(Integer.MAX_VALUE, vertexes, notAvailable, centralsLeft, d, center, result, callback, progressDiff, level);
 
                 for (int i = 0; i < result.length; i++) {
                     mResult.mCenters.add(result[i]);
                 }
-                // callback.calculationFinished();
+                callback.calculationFinished();
 
                 StringBuilder sb = new StringBuilder();
                 for (Vertex v : mResult.mCenters) {
@@ -116,7 +127,7 @@ public class GraphResolver {
 
     // FIXME: just temporary on arrays in order to check if it's working
 
-    private int findCentral(int currentLongest, final Set<Vertex> vertexes, boolean[] notAvailable, int centralsLeft, int[] d, Vertex[] center, Vertex[] result) {
+    private int findCentral(int currentLongest, final Set<Vertex> vertexes, boolean[] notAvailable, int centralsLeft, int[] d, Vertex[] center, Vertex[] result, ProgressCallback callback, float progressDiff, int level) {
         // Log.d(LOG_TAG, Log.getCurrentMethodName() + " centrals: " + centralsLeft + " " + Arrays.toString(notAvailable) + " "
         // + Arrays.toString(d));
 
@@ -141,6 +152,9 @@ public class GraphResolver {
         }
 
         for (Vertex v : vertexes) {
+            if (level == 0)
+                callback.increaseProgress(progressDiff);
+
             if (notAvailable[v.getId() - 1])
                 continue;
 
@@ -150,7 +164,7 @@ public class GraphResolver {
 
             countDijkstra(v, vertexes, tmpD, tmpCenter, notAvailable);
             notAvailable[v.getId() - 1] = true;
-            currentLongest = findCentral(currentLongest, vertexes, notAvailable, centralsLeft - 1, tmpD, tmpCenter, result);
+            currentLongest = findCentral(currentLongest, vertexes, notAvailable, centralsLeft - 1, tmpD, tmpCenter, result, callback, progressDiff, level - 1);
             // if (pom < currentLongest) {
             // // Log.d(LOG_TAG, Log.getCurrentMethodName() + " RESULT: longest: " + pom + " centrals: " +
             // // printCentrals(tmpCenter)

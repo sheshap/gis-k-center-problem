@@ -2,6 +2,7 @@ package pl.elka.gis.model;
 
 import java.util.Set;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -20,6 +21,22 @@ public class Edge {
 
         mVertex1Id = vertex1Id;
         mVertex2Id = vertex2Id;
+    }
+
+    public Edge(Vertex v1, Vertex v2) {
+        if (v1 == null || v2 == null)
+            throw new NullPointerException();
+
+        if (ObjectUtils.equals(v1, v2))
+            throw new IllegalArgumentException();
+
+        mVertex1Id = v1.getId();
+        mVertex2Id = v2.getId();
+
+        mVertex1 = v1;
+        mVertex2 = v2;
+
+        mWeight = Vertex.distance(mVertex1, mVertex2);
     }
 
     public boolean setVertexes(final Set<Vertex> vertexes) {

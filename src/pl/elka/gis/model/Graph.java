@@ -17,18 +17,36 @@ public class Graph {
     private static final String LOG_TAG = Graph.class.getSimpleName();
     //
     private final Set<Vertex> mVertexes;
+    private final Set<Edge> mEdges;
     //
     private int mSubgraphsCount = -1;
 
-    public Graph(Set<Vertex> vertexes) {
+    public Graph(Set<Vertex> vertexes, Set<Edge> edges) {
         if (vertexes == null)
             vertexes = Collections.emptySet();
 
         mVertexes = vertexes;
+
+        if (edges == null)
+            edges = Collections.emptySet();
+
+        mEdges = edges;
     }
 
     public Set<Vertex> getVertexes() {
         return Collections.unmodifiableSet(mVertexes);
+    }
+
+    public Set<Edge> getEdges() {
+        return Collections.unmodifiableSet(mEdges);
+    }
+
+    public int getVertexesCount() {
+        return mVertexes.size();
+    }
+
+    public int getEdgesCount() {
+        return mEdges.size();
     }
 
     /******************** SUBGRAPHS ********************/
@@ -99,10 +117,13 @@ public class Graph {
             vertexes[i - 1] = new Vertex(i, x, y);
         }
 
+        Set<Edge> edges = new HashSet<Edge>();
+
         for (int i = 0; i < edgeCount; i++) {
             int v1Id = scanner.nextInt(), v2Id = scanner.nextInt();
             Vertex v1 = vertexes[v1Id - 1], v2 = vertexes[v2Id - 1];
-            Vertex.setAsNeighbours(v1, v2);
+            if (Vertex.setAsNeighbours(v1, v2))
+                edges.add(new Edge(v1, v2));
         }
 
         Set<Vertex> vertexesSet = new HashSet<Vertex>(vertexCount);
@@ -110,6 +131,6 @@ public class Graph {
             vertexesSet.add(v);
         }
 
-        return new Graph(vertexesSet);
+        return new Graph(vertexesSet, edges);
     }
 }
