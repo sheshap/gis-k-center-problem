@@ -209,11 +209,11 @@ public class CalculatingThread extends Thread {
      */
     private void fakeCountCentersAlgorithm() {
         // ////////////////////////////////////////////////////////////////////testing
-        int timeX = 2; // for 1 it is about 3 seconds
+        int timeX = 1; // for 1 it is about 3 seconds
         for (int j = 0; j < 100; ++j) {
             mCallback.updateProgress(j);
-            for (int i = 0; i < 99999999 * timeX; ++i) {
-                for (int k = 0; k < 999999991; ++k) {
+            for (int i = 0; i < 9999999 * timeX; ++i) {
+                for (int k = 0; k < 9999999; ++k) {
                     // simulate long working thread
                 }
             }

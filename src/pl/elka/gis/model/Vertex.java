@@ -19,6 +19,7 @@ public class Vertex {
     //
     private int mShortestPath = Integer.MAX_VALUE;
     private Vertex mNearestCenter;
+    private boolean mIsCenter;
 
     public Vertex(int id, int x, int y) {
         if (id < 0 || x < 0 || y < 0)
@@ -92,7 +93,14 @@ public class Vertex {
         if (nearestCenter == null)
             throw new IllegalArgumentException();
 
+        if (ObjectUtils.equals(this, nearestCenter))
+            mIsCenter = true;
+
         this.mNearestCenter = nearestCenter;
+    }
+
+    public boolean isCenter() {
+        return mIsCenter;
     }
 
     public int distance(Vertex v) {
