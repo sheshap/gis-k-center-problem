@@ -11,6 +11,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -62,6 +63,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
     private GraphResolver mGraphResolver;
 
     private ExecutorService mResolvingExecutor;
+    private Future mResolvingFuture;
 
     public MainFrame() {
         super(APP_NAME);
@@ -171,7 +173,6 @@ public class MainFrame extends JFrame implements ProgressCallback {
                         boolean isGraphLoaded = isGraphLoaded();
 
                         mGraph = Graph.fromFile(f);
-                        mGraphResolver = new GraphResolver(mGraph);
 
                         mLastStatusText = String.format("%s :: vertexes=%d  edges=%d", f.getName(), mGraph.getVertexes().size(), mGraph
                                 .getEdges()
@@ -241,14 +242,15 @@ public class MainFrame extends JFrame implements ProgressCallback {
                         final int centersCount = Integer.parseInt(val);
                         onCalculationStarts(centersCount);
 
-                        Runnable resoleRunnable = new Runnable() {
+                        Runnable resolveRunnable = new Runnable() {
 
                             @Override
                             public void run() {
+                                mGraphResolver = new GraphResolver(mGraph);
                                 mGraphResolver.resolve(centersCount, MainFrame.this);
                             }
                         };
-                        mResolvingExecutor.execute(resoleRunnable);
+                        mResolvingFuture = mResolvingExecutor.submit(resolveRunnable);
 
                     } catch (NumberFormatException ex) {
                         JOptionPane
@@ -286,7 +288,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
         onCalculationEnds();
 
         mGraphCalculationInProgress = true;
-        mProgressDialog = new CalculationProgressDialog(this, "Calculation progress", mGraph, centers);
+        mProgressDialog = new CalculationProgressDialog(this, "Calculation progress", MainFrame.this, mGraph, centers);
         mProgressDialog.setVisible(true);
         setGraphOptions();
     }
@@ -343,6 +345,16 @@ public class MainFrame extends JFrame implements ProgressCallback {
         mGraphCalculationInProgress = false;
         mStatusLabel.setText(mLastStatusText);
         setGraphOptions();
+    }
+
+    @Override
+    public void calculationStopped() {
+        Log.d(LOG_TAG, Log.getCurrentMethodName());
+
+        mResolvingFuture.cancel(true);
+
+        onCalculationEnds();
+        mGraphResolver = null;
     }
 
     private static void showStatsDialog(Component parentComponent, Graph graph) {

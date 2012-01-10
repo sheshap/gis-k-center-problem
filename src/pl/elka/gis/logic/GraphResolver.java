@@ -109,7 +109,14 @@ public class GraphResolver {
                 // }
 
                 callback.updateProgress(0);
+
+                if (Thread.interrupted())
+                    return;
+
                 mResult.longest = findCentral(Integer.MAX_VALUE, vertexes, notAvailable, centersLeft, d, center, result, callback, progressDiff, level);
+
+                if (mResult.longest == -1)
+                    return;
 
                 mResult.centers.clear();
                 for (int i = 0; i < result.length; i++) {
@@ -149,6 +156,9 @@ public class GraphResolver {
         // Log.d(LOG_TAG, Log.getCurrentMethodName() + " centrals: " + centralsLeft + " " + Arrays.toString(notAvailable) + " "
         // + Arrays.toString(d));
 
+        if (Thread.interrupted() || currentLongest == -1)
+            return -1;
+
         Log
                 .d(LOG_TAG, String
                         .format("left: %d, notAvailable: %s, d: %s, currentLongest: %d, centers: %s, result: %s", centralsLeft, Arrays
@@ -170,6 +180,9 @@ public class GraphResolver {
         }
 
         for (Vertex v : vertexes) {
+            if (Thread.interrupted() || currentLongest == -1)
+                return -1;
+
             if (level == 0)
                 callback.increaseProgress(progressDiff);
 
