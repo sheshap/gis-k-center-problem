@@ -41,6 +41,14 @@ public class GraphResolver {
             return centers != null && !centers.isEmpty();
         }
 
+        public int getCentersCount() {
+            return centersCount;
+        }
+
+        public int getLongest() {
+            return longest;
+        }
+
     }
 
     private static final String LOG_TAG = GraphResolver.class.getSimpleName();

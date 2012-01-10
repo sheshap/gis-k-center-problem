@@ -60,7 +60,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
     private ScrollPane mScrollPane;
 
     private Graph mGraph;
-    private GraphResolver mGraphResolver;
+    private GraphResolver.Result mResult;
 
     private ExecutorService mResolvingExecutor;
     private Future mResolvingFuture;
@@ -202,7 +202,6 @@ public class MainFrame extends JFrame implements ProgressCallback {
                 mScrollPane.removeAll();
                 mGraphPanel = null;
                 mGraph = null;
-                mGraphResolver = null;
 
                 mLastStatusText = "Idle";
                 mStatusLabel.setText(mLastStatusText);
@@ -246,8 +245,8 @@ public class MainFrame extends JFrame implements ProgressCallback {
 
                             @Override
                             public void run() {
-                                mGraphResolver = new GraphResolver(mGraph);
-                                mGraphResolver.resolve(centersCount, MainFrame.this);
+                                GraphResolver resolver = new GraphResolver(mGraph);
+                                resolver.resolve(centersCount, MainFrame.this);
                             }
                         };
                         mResolvingFuture = mResolvingExecutor.submit(resolveRunnable);
@@ -264,7 +263,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                showStatsDialog(MainFrame.this, mGraph);
+                showStatsDialog(MainFrame.this, mGraph, mResult);
             }
         });
 
@@ -285,7 +284,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
     }
 
     private void onCalculationStarts(int centers) {
-        onCalculationEnds();
+        onCalculationEnds(false, null);
 
         mGraphCalculationInProgress = true;
         mProgressDialog = new CalculationProgressDialog(this, "Calculation progress", MainFrame.this, mGraph, centers);
@@ -318,8 +317,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
     public void calculationError(String errorMessage) {
         Log.d(LOG_TAG, Log.getCurrentMethodName() + errorMessage);
 
-        onCalculationEnds();
-
+        onCalculationEnds(true, null);
         JOptionPane.showMessageDialog(MainFrame.this, errorMessage, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
@@ -327,24 +325,8 @@ public class MainFrame extends JFrame implements ProgressCallback {
     public void calculationFinished(GraphResolver.Result result) {
         Log.d(LOG_TAG, Log.getCurrentMethodName());
 
-        onCalculationEnds();
-        mGraphPanel.setResult(result);
-        mGraphPanel.repaint();
-
-        showStatsDialog(MainFrame.this, mGraph);
-    }
-
-    private void onCalculationEnds() {
-        if (mProgressDialog != null) {
-            mProgressDialog.dispose();
-            mProgressDialog = null;
-        }
-
-        mProgress = 0;
-
-        mGraphCalculationInProgress = false;
-        mStatusLabel.setText(mLastStatusText);
-        setGraphOptions();
+        onCalculationEnds(true, result);
+        showStatsDialog(MainFrame.this, mGraph, mResult);
     }
 
     @Override
@@ -352,12 +334,31 @@ public class MainFrame extends JFrame implements ProgressCallback {
         Log.d(LOG_TAG, Log.getCurrentMethodName());
 
         mResolvingFuture.cancel(true);
-
-        onCalculationEnds();
-        mGraphResolver = null;
+        onCalculationEnds(true, null);
     }
 
-    private static void showStatsDialog(Component parentComponent, Graph graph) {
+    private void onCalculationEnds(boolean repaint, GraphResolver.Result result) {
+        if (mProgressDialog != null) {
+            mProgressDialog.dispose();
+            mProgressDialog = null;
+        }
+
+        mProgress = 0;
+
+        if (repaint) {
+            mResult = result;
+            mGraphPanel.setResult(result);
+            mGraphPanel.repaint();
+        }
+
+        mGraphCalculationInProgress = false;
+        mStatusLabel.setText(mLastStatusText);
+        setGraphOptions();
+    }
+
+    /******************** STATS DIALOG ********************/
+
+    private static void showStatsDialog(Component parentComponent, Graph graph, GraphResolver.Result result) {
         if (parentComponent == null)
             return;
 
@@ -371,6 +372,12 @@ public class MainFrame extends JFrame implements ProgressCallback {
         sb.append("Vertexes: ").append(graph.getVertexes().size()).append("\n");
         sb.append("Edges: ").append(graph.getEdges().size()).append("\n");
         sb.append("Subgraphs: ").append(graph.getSubgraphsCount() + 1).append("\n");
+
+        if (result != null) {
+            sb.append("\n");
+            sb.append("Centers: ").append(result.getCentersCount()).append("\n");
+            sb.append("Longest path: ").append(result.getLongest()).append("\n");
+        }
 
         JOptionPane.showMessageDialog(parentComponent, sb.toString(), "Statistics", JOptionPane.INFORMATION_MESSAGE);
     }
