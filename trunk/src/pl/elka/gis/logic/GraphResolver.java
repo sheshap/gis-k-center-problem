@@ -70,10 +70,10 @@ public class GraphResolver {
         return mResult;
     }
 
-    public void resolve(int centralsCount, ProgressCallback callback) {
+    public void resolve(int centersCount, ProgressCallback callback) {
         Log.d(LOG_TAG, Log.getCurrentMethodName() + " start");
 
-        mResultCase = checkResultCase(centralsCount);
+        mResultCase = checkResultCase(centersCount);
 
         switch (mResultCase) {
             case NO_VERTEXES :
@@ -85,11 +85,17 @@ public class GraphResolver {
                 return;
 
             case CENTRALS_EQUALS_SUBGRAPHS :
+                mResult.centersCount = centersCount;
+                mResult.longest = 0;
+                mResult.centers = mGraph.getVertexes();
+                callback.calculationFinished(mResult);
+                return;
+
             case DEFAULT :
             default :
-                int centersLeft = initializeCenters(centralsCount);
+                int centersLeft = initializeCenters(centersCount);
 
-                Log.d(LOG_TAG, Log.getCurrentMethodName() + " centrals: " + centralsCount);
+                Log.d(LOG_TAG, Log.getCurrentMethodName() + " centrals: " + centersCount);
 
                 Set<Vertex> vertexes = mGraph.getVertexes();
                 Vertex[] center = new Vertex[vertexes.size()];
