@@ -114,13 +114,13 @@ public class GraphResolver {
                 }
 
                 int level = 0;
-                // if (centralsLeft > 1)
-                // level = 2;
+                if (centersLeft > 2)
+                    level = 2;
 
                 float progressDiff = 100 / vertexes.size();
-                // if (level == 2) {
-                // progressDiff /= (vertexes.size() * vertexes.size());
-                // }
+                if (level == 2) {
+                    progressDiff /= (vertexes.size() * vertexes.size());
+                }
 
                 callback.updateProgress(0);
 

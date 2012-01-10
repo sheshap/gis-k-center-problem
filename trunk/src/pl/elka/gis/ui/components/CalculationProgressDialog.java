@@ -58,7 +58,7 @@ public class CalculationProgressDialog extends JDialog {
     }
 
     public void updateProgress(float progress) {
-        setTitle("Calculation progress: " + progress + "%");
+        setTitle(String.format("Calculation progress: %.3f%s", progress, "%"));
         mGauge.setCurrentAmount((int) progress);
     }
 }
