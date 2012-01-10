@@ -115,6 +115,8 @@ public class MainFrame extends JFrame implements ProgressCallback {
         return mGraph != null;
     }
 
+    /******************** MENU AND ACTIONS ********************/
+
     private void setGraphOptions() {
         boolean isGraphLoaded = isGraphLoaded();
 
@@ -153,6 +155,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
         actions.add(mMenuItems[MENU_GENERATE]);
         mMenuItems[MENU_COUNT] = new JMenuItem("Count graph");
         mMenuItems[MENU_COUNT].setMnemonic('C');
+
         actions.add(mMenuItems[MENU_COUNT]);
         mMenuItems[MENU_STATS] = new JMenuItem("Statistics");
         mMenuItems[MENU_STATS].setMnemonic('S');
@@ -282,6 +285,8 @@ public class MainFrame extends JFrame implements ProgressCallback {
         bar.add(actions);
         setJMenuBar(bar);
     }
+
+    /******************** CALCULATION CALLBACK ********************/
 
     private void onCalculationStarts(int centers) {
         onCalculationEnds(false, null);
