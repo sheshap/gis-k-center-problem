@@ -4,6 +4,7 @@ import java.awt.Point;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+@Deprecated
 public class GVertex {
 
     private Point mCoord;

@@ -1,6 +1,7 @@
 package pl.elka.gis.logic;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,14 +21,26 @@ public class GraphResolver {
 
     public static class Result {
 
-        Set<Vertex> mCenters;
-        int mCentralsCount;
-        int mLongest = Integer.MAX_VALUE;
+        Set<Vertex> centers = null;
+        int centersCount = -1;
+        int longest = Integer.MAX_VALUE;
 
-        public Result(int centralsCount) {
-            mCentralsCount = centralsCount;
-            mCenters = new HashSet<Vertex>(centralsCount);
+        public void setForCenters(int centersCount) {
+            this.centersCount = centersCount;
+            centers = new HashSet<Vertex>(centersCount);
         }
+
+        public Set<Vertex> getCenters() {
+            if (centers == null)
+                return Collections.emptySet();
+            else
+                return centers;
+        }
+
+        public boolean hasCenters() {
+            return centers != null && !centers.isEmpty();
+        }
+
     }
 
     private static final String LOG_TAG = GraphResolver.class.getSimpleName();
@@ -42,6 +55,11 @@ public class GraphResolver {
             throw new NullPointerException();
 
         mGraph = graph;
+        mResult = new Result();
+    }
+
+    public GraphResolver.Result getResult() {
+        return mResult;
     }
 
     public void resolve(int centralsCount, ProgressCallback callback) {
@@ -57,10 +75,11 @@ public class GraphResolver {
                 Log.d(LOG_TAG, Log.getCurrentMethodName() + " Calculation error: " + mResultCase.name());
                 callback.calculationError(mResultCase.name());
                 return;
+
             case CENTRALS_EQUALS_SUBGRAPHS :
             case DEFAULT :
             default :
-                int centralsLeft = initializeCenters(centralsCount);
+                int centersLeft = initializeCenters(centralsCount);
 
                 Log.d(LOG_TAG, Log.getCurrentMethodName() + " centrals: " + centralsCount);
 
@@ -90,23 +109,22 @@ public class GraphResolver {
                 // }
 
                 callback.updateProgress(0);
+                mResult.longest = findCentral(Integer.MAX_VALUE, vertexes, notAvailable, centersLeft, d, center, result, callback, progressDiff, level);
 
-                mResult.mLongest = findCentral(Integer.MAX_VALUE, vertexes, notAvailable, centralsLeft, d, center, result, callback, progressDiff, level);
-
+                mResult.centers.clear();
                 for (int i = 0; i < result.length; i++) {
-                    mResult.mCenters.add(result[i]);
+                    mResult.centers.add(result[i]);
                 }
-                callback.calculationFinished();
+                callback.calculationFinished(mResult);
 
-                StringBuilder sb = new StringBuilder();
-                for (Vertex v : mResult.mCenters) {
-                    ;
-                    sb.append(v.getId());
-                    sb.append(" ");
-                }
-
-                Log.d(LOG_TAG, Log.getCurrentMethodName() + " Case: " + mResultCase.name() + " Longest: " + mResult.mLongest
-                        + " Centers: " + sb.toString());
+                // StringBuilder sb = new StringBuilder();
+                // for (Vertex v : mResult.mCenters) {
+                // sb.append(v.getId());
+                // sb.append(" ");
+                // }
+                //
+                // Log.d(LOG_TAG, Log.getCurrentMethodName() + " Case: " + mResultCase.name() + " Longest: " + mResult.mLongest
+                // + " Centers: " + sb.toString());
 
                 return;
         }
@@ -265,12 +283,12 @@ public class GraphResolver {
         return idx;
     }
 
-    private int initializeCenters(int centralsCount) {
+    private int initializeCenters(int centersCount) {
         Log.d(LOG_TAG, Log.getCurrentMethodName());
 
         Set<Vertex> vertexes = mGraph.getVertexes();
         Set<Vertex> pomVertexes = new HashSet<Vertex>();
-        mResult = new Result(centralsCount);
+        mResult.setForCenters(centersCount);
 
         for (Vertex v : vertexes) {
             if (v.hasNeighbours()) {
@@ -279,12 +297,12 @@ public class GraphResolver {
             } else {
                 v.setShortestPathLength(0);
                 v.setNearestCenter(v);
-                mResult.mCenters.add(v);
-                centralsCount--;
+                mResult.centers.add(v);
+                centersCount--;
             }
         }
 
-        return centralsCount;
+        return centersCount;
     }
 
     public ResultCase getResultCase() {

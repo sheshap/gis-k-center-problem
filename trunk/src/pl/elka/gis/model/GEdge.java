@@ -1,5 +1,6 @@
 package pl.elka.gis.model;
 
+@Deprecated
 public class GEdge {
 
     private int mStartingVertexId;

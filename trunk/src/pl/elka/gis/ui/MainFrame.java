@@ -9,6 +9,12 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -38,27 +44,39 @@ public class MainFrame extends JFrame implements ProgressCallback {
 
     private static final String LOG_TAG = MainFrame.class.getSimpleName();
     private static final String APP_NAME = "K-graph center solver";
+
+    private JMenuItem[] mMenuItems;
+
     private GraphGenerationFrame mGraphGenerationFrame;
+
     private CalculationProgressDialog mProgressDialog;
     private boolean mGraphCalculationInProgress;
+
     private JLabel mStatusLabel;
     private String mLastStatusText;
+
     private GraphPainterPanel mGraphPanel;
     private ScrollPane mScrollPane;
+
     private Graph mGraph;
     private GraphResolver mGraphResolver;
-    private JMenuItem[] mMenuItems;
+
+    private ExecutorService mResolvingExecutor;
 
     public MainFrame() {
         super(APP_NAME);
         WindowUtilities.setNativeLookAndFeel();
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setLocation(screenSize.width / 8, screenSize.height / 8);
+        setMinimumSize(new Dimension(600, 480));
         setSize(screenSize.width * 3 / 4, screenSize.height * 3 / 4);
         setPreferredSize(new Dimension(screenSize.width * 3 / 4, screenSize.height * 3 / 4));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
         ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
+
+        mResolvingExecutor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), Executors
+                .defaultThreadFactory(), new SimpleRejectedExecutionHandler());
 
         prepareMenu();
 
@@ -73,6 +91,14 @@ public class MainFrame extends JFrame implements ProgressCallback {
         con.add(mScrollPane, BorderLayout.CENTER);
 
         setVisible(true);
+    }
+    private static class SimpleRejectedExecutionHandler implements RejectedExecutionHandler {
+
+        @Override
+        public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+            Log.d(LOG_TAG, String.format("Executor (%s) rejects runnable (%s)", executor, r));
+        }
+
     }
 
     private GraphPainterPanel getOrCreateGraphPanel() {
@@ -90,10 +116,12 @@ public class MainFrame extends JFrame implements ProgressCallback {
     private void setGraphOptions() {
         boolean isGraphLoaded = isGraphLoaded();
 
-        mMenuItems[MENU_CLOSE].setEnabled(isGraphLoaded);
-        mMenuItems[MENU_COUNT].setEnabled(isGraphLoaded);
+        mMenuItems[MENU_OPEN].setEnabled(!mGraphCalculationInProgress);
+        mMenuItems[MENU_CLOSE].setEnabled(isGraphLoaded && !mGraphCalculationInProgress);
+        mMenuItems[MENU_COUNT].setEnabled(isGraphLoaded && !mGraphCalculationInProgress);
         mMenuItems[MENU_STATS].setEnabled(isGraphLoaded);
         mMenuItems[MENU_PROGRESS].setEnabled(isGraphLoaded && mGraphCalculationInProgress);
+        mMenuItems[MENU_GENERATE].setEnabled(!mGraphCalculationInProgress);
     }
 
     private static final int MENU_OPEN = 0, MENU_CLOSE = 1, MENU_EXIT = 2, MENU_GENERATE = 3, MENU_COUNT = 4, MENU_STATS = 5,
@@ -135,27 +163,28 @@ public class MainFrame extends JFrame implements ProgressCallback {
 
         mMenuItems[MENU_OPEN].addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
-                if (mGraphCalculationInProgress) {
-                    JOptionPane
-                            .showMessageDialog(MainFrame.this, "Calculation in progress.\nPlease wait until finished.", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
                 File f = FilePickingUtils.openFileChooser(MainFrame.this);
                 if (f != null) {
                     try {
+                        boolean isGraphLoaded = isGraphLoaded();
+
                         mGraph = Graph.fromFile(f);
                         mGraphResolver = new GraphResolver(mGraph);
 
-                        mLastStatusText = String.format("Graph: %s, vertexes: %d, edges: %d", f.getName(), mGraph
-                                .getVertexes()
-                                .size(), mGraph.getEdges().size());
+                        mLastStatusText = String.format("%s :: vertexes=%d  edges=%d", f.getName(), mGraph.getVertexes().size(), mGraph
+                                .getEdges()
+                                .size());
                         mStatusLabel.setText(mLastStatusText);
 
                         GraphPainterPanel graphPanel = getOrCreateGraphPanel();
+                        if (isGraphLoaded)
+                            graphPanel.reset();
+
                         graphPanel.setGraph(mGraph);
                         mScrollPane.add(graphPanel);
-                        graphPanel.revalidate();
+                        graphPanel.repaint();
 
                         setGraphOptions();
                     } catch (Exception e1) {
@@ -167,10 +196,12 @@ public class MainFrame extends JFrame implements ProgressCallback {
 
         mMenuItems[MENU_CLOSE].addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
                 mScrollPane.removeAll();
                 mGraphPanel = null;
                 mGraph = null;
+                mGraphResolver = null;
 
                 mLastStatusText = "Idle";
                 mStatusLabel.setText(mLastStatusText);
@@ -181,14 +212,16 @@ public class MainFrame extends JFrame implements ProgressCallback {
 
         mMenuItems[MENU_EXIT].addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
+                mResolvingExecutor.shutdownNow();
                 System.exit(0);
             }
         });
 
-        // actions menu
         mMenuItems[MENU_GENERATE].addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
                 if (mGraphGenerationFrame != null) {
                     mGraphGenerationFrame.dispose(); // dispose and recreate
@@ -196,76 +229,69 @@ public class MainFrame extends JFrame implements ProgressCallback {
                 mGraphGenerationFrame = new GraphGenerationFrame(MainFrame.this.getLocationOnScreen());
             }
         });
+
         mMenuItems[MENU_COUNT].addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
-                if (!isGraphLoaded()) {
-                    JOptionPane.showMessageDialog(MainFrame.this, "No graph loaded.", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                if (mGraphCalculationInProgress) {
-                    JOptionPane
-                            .showMessageDialog(MainFrame.this, "Calculation in progress.\nPlease wait until finished.", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
                 String val = (String) JOptionPane
-                        .showInputDialog(MainFrame.this, "Enter centers count:", "Centers count", JOptionPane.PLAIN_MESSAGE, null, null, "3");
+                        .showInputDialog(MainFrame.this, "Number of centers:", "Count graph", JOptionPane.PLAIN_MESSAGE, null, null, "3");
                 if ((val != null) && (val.length() > 0)) {
                     try {
-                        int centersCount = Integer.parseInt(val);
-                        mGraphResolver.resolve(centersCount, MainFrame.this);
+                        final int centersCount = Integer.parseInt(val);
+                        onCalculationStarts(centersCount);
+
+                        Runnable resoleRunnable = new Runnable() {
+
+                            @Override
+                            public void run() {
+                                mGraphResolver.resolve(centersCount, MainFrame.this);
+                            }
+                        };
+                        mResolvingExecutor.execute(resoleRunnable);
 
                     } catch (NumberFormatException ex) {
                         JOptionPane
-                                .showMessageDialog(MainFrame.this, "Wrong centers number.", "Error", JOptionPane.ERROR_MESSAGE);
-                        ex.printStackTrace();
+                                .showMessageDialog(MainFrame.this, "The entered number of centers is invalid.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
             }
         });
+
         mMenuItems[MENU_STATS].addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
-                if (!isGraphLoaded()) {
-                    JOptionPane.showMessageDialog(MainFrame.this, "No graph loaded.", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
                 showStatsDialog(MainFrame.this, mGraph);
             }
         });
+
         mMenuItems[MENU_PROGRESS].addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
-                if (!isGraphLoaded()) {
-                    JOptionPane.showMessageDialog(MainFrame.this, "No graph loaded.", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
                 if (mProgressDialog != null) {
-                    mProgressDialog.setVisible(true);
-                } else {
-                    mProgressDialog = new CalculationProgressDialog(MainFrame.this, "Calculation progress", mGraph, 1);
                     mProgressDialog.setVisible(true);
                 }
             }
         });
+
         JMenuBar bar = new JMenuBar();
-        setJMenuBar(bar);
         bar.add(file);
         bar.add(actions);
+        setJMenuBar(bar);
     }
 
-    private void startGraphProcessing() {
-        if (mGraphGenerationFrame != null) {
-            mGraphGenerationFrame.dispose();
-        }
+    private void onCalculationStarts(int centers) {
+        onCalculationEnds();
+
         mGraphCalculationInProgress = true;
-        mProgressDialog = new CalculationProgressDialog(this, "Calculation progress", mGraph, 1);
+        mProgressDialog = new CalculationProgressDialog(this, "Calculation progress", mGraph, centers);
         mProgressDialog.setVisible(true);
+        setGraphOptions();
     }
 
-    private float mProgress = 0.0f;
+    private float mProgress = 0;
 
     @Override
     public void updateProgress(float progressValue) {
@@ -278,10 +304,8 @@ public class MainFrame extends JFrame implements ProgressCallback {
     }
 
     @Override
-    public void increaseProgress(float progressToAdd) {
-        Log.d(LOG_TAG, Log.getCurrentMethodName());
-
-        mProgress += progressToAdd;
+    public void increaseProgress(float progressMade) {
+        mProgress += progressMade;
         if (mProgress > 100) {
             mProgress = 100;
         }
@@ -292,29 +316,33 @@ public class MainFrame extends JFrame implements ProgressCallback {
     public void calculationError(String errorMessage) {
         Log.d(LOG_TAG, Log.getCurrentMethodName() + errorMessage);
 
-        if (mProgressDialog != null) {
-            mProgressDialog.dispose();
-        }
+        onCalculationEnds();
+
         JOptionPane.showMessageDialog(MainFrame.this, errorMessage, "Error", JOptionPane.ERROR_MESSAGE);
-        mGraphCalculationInProgress = false;
-        mStatusLabel.setText(mLastStatusText);
-        setGraphOptions();
     }
 
     @Override
-    public void calculationFinished() {
+    public void calculationFinished(GraphResolver.Result result) {
         Log.d(LOG_TAG, Log.getCurrentMethodName());
 
+        onCalculationEnds();
+        mGraphPanel.setResult(result);
+        mGraphPanel.repaint();
+
+        showStatsDialog(MainFrame.this, mGraph);
+    }
+
+    private void onCalculationEnds() {
         if (mProgressDialog != null) {
             mProgressDialog.dispose();
+            mProgressDialog = null;
         }
-        // mGraphPanel.refreshGraph();
+
+        mProgress = 0;
 
         mGraphCalculationInProgress = false;
         mStatusLabel.setText(mLastStatusText);
-
         setGraphOptions();
-        showStatsDialog(MainFrame.this, mGraph);
     }
 
     private static void showStatsDialog(Component parentComponent, Graph graph) {

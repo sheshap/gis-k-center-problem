@@ -1,5 +1,6 @@
 package pl.elka.gis.logic;
 
+@Deprecated
 public enum ResultFlag {
     PREPROCESSING_ERROR_GENERAL,
     PREPROCESSING_DONE_CENTERS_MORE_OR_EQUAL_VERTEXES,

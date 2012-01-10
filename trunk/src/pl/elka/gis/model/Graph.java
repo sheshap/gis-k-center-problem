@@ -2,6 +2,9 @@ package pl.elka.gis.model;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Scanner;
@@ -132,5 +135,29 @@ public class Graph {
         }
 
         return new Graph(vertexesSet, edges);
+    }
+
+    public void toFile(File file) throws IOException {
+        if (file == null)
+            throw new NullPointerException();
+
+        FileWriter fileWriter = new FileWriter(file);
+        PrintWriter out = new PrintWriter(fileWriter);
+
+        out.println(String.format("%d %d", mVertexes.size(), mEdges.size()));
+
+        Vertex[] vertexes = new Vertex[mVertexes.size()];
+        for (Vertex v : mVertexes) {
+            vertexes[v.getId() - 1] = v;
+        }
+        for (Vertex v : vertexes) {
+            out.println(String.format("%d %d", v.getX(), v.getY()));
+        }
+
+        for (Edge e : mEdges) {
+            out.println(String.format("%d %d", e.getVertexIds().getLeft(), e.getVertexIds().getRight()));
+        }
+
+        out.close();
     }
 }

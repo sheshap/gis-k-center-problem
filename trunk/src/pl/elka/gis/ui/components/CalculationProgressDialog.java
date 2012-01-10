@@ -18,12 +18,12 @@ public class CalculationProgressDialog extends JDialog {
     private Gauge mGauge;
 
     public CalculationProgressDialog(JFrame parentFrame, String title, Graph graph, int centers) {
-        super(parentFrame, title, true);
+        super(parentFrame, title, false);
         Dimension parentSize = parentFrame.getSize();
-        int w = parentSize.width / 3, h = parentSize.height / 3;
+        int w = parentSize.width / 3, h = parentSize.height / 5;
         setSize(w, h);
         Point locationOnScreen = parentFrame.getLocationOnScreen();
-        setLocation(locationOnScreen.x + parentSize.width / 3, locationOnScreen.y + parentSize.height / 3);
+        setLocation(locationOnScreen.x + parentSize.width / 3, locationOnScreen.y + parentSize.height * 2 / 5);
 
         Container pane = getContentPane();
 

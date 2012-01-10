@@ -15,6 +15,7 @@ import pl.elka.gis.model.ResultSet;
 import pl.elka.gis.ui.components.ProgressCallback;
 import pl.elka.gis.utils.Log;
 
+@Deprecated
 public class Controller {
 
     private Set<GVertex> mVertexSetOriginal; // this set will not be touched by algorithm
