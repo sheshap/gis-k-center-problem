@@ -11,4 +11,6 @@ public interface ProgressCallback {
     public void calculationError(String errorMessage);
 
     public void calculationFinished(GraphResolver.Result result);
+
+    public void calculationStopped();
 }

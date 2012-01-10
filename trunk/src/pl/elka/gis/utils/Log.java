@@ -5,7 +5,7 @@ package pl.elka.gis.utils;
  */
 public class Log {
 
-    private static final boolean LOGGING_ON = false;
+    private static final boolean LOGGING_ON = true;
 
     public static void d(String logtag, String message) {
         if (LOGGING_ON) {
