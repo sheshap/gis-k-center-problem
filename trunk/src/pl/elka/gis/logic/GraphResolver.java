@@ -204,28 +204,6 @@ public class GraphResolver {
             countDijkstra(v, vertexes, tmpD, tmpCenter, notAvailable);
             notAvailable[v.getId() - 1] = true;
             currentLongest = findCentral(currentLongest, vertexes, notAvailable, centralsLeft - 1, tmpD, tmpCenter, result, callback, progressDiff, level - 1);
-            // if (pom < currentLongest) {
-            // // Log.d(LOG_TAG, Log.getCurrentMethodName() + " RESULT: longest: " + pom + " centrals: " +
-            // // printCentrals(tmpCenter)
-            // // + " d: " + Arrays.toString(tmpD));
-            //
-            // for (int i = 0; i < tmpCenter.length; i++) {
-            // result[i] = tmpCenter[i];
-            // }
-            // currentLongest = pom;
-            //
-            // Log
-            // .d(LOG_TAG, String
-            // .format("BETTER left: %d, notAvailable: %s, tmpD: %s, currentLongest: %d, tmpCenters: %s, result: %s",
-            // centralsLeft, Arrays
-            // .toString(notAvailable), Arrays.toString(tmpD), currentLongest, printCentrals(tmpCenter), printCentrals(result)));
-            // } else {
-            // Log
-            // .d(LOG_TAG, String
-            // .format("WORSE   left: %d, notAvailable: %s, tmpD: %s, currentLongest: %d, tmpCenters: %s, result: %s",
-            // centralsLeft, Arrays
-            // .toString(notAvailable), Arrays.toString(tmpD), currentLongest, printCentrals(tmpCenter), printCentrals(result)));
-            // }
             notAvailable[v.getId() - 1] = false;
 
         }
