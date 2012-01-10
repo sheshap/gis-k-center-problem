@@ -7,6 +7,8 @@ import java.util.Set;
 
 import org.apache.commons.lang3.ObjectUtils;
 
+import pl.elka.gis.utils.AppConstants;
+
 /**
  * @author Andrzej Makarewicz
  */
@@ -22,7 +24,7 @@ public class Vertex {
     private boolean mIsCenter;
 
     public Vertex(int id, int x, int y) {
-        if (id < 0 || x < 0 || y < 0)
+        if (id < 0 || x < 0 || x > AppConstants.MAX_X_Y_VALUE || y < 0 || y > AppConstants.MAX_X_Y_VALUE)
             throw new IllegalArgumentException();
 
         mId = id;

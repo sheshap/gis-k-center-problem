@@ -18,6 +18,7 @@ import pl.elka.gis.ui.components.ProgressCallback;
 import pl.elka.gis.utils.AppConstants;
 import pl.elka.gis.utils.Log;
 
+@Deprecated
 public class CalculatingThread extends Thread {
 
     private static final String LOG_TAG = "CalculatingThread";
@@ -47,7 +48,7 @@ public class CalculatingThread extends Thread {
         switch (preprocessResult) {
             case PREPROCESSING_DONE_CENTERS_MORE_OR_EQUAL_VERTEXES :
                 Log.d(LOG_TAG, "CENTERS_MORE_OR_EQUAL_VERTEXES > don't have to do anything more - solution is in result set");
-                mCallback.calculationFinished();
+                mCallback.calculationFinished(null);
                 return;
             case PREPROCESSING_DONE_CENTERS_EQUAL_SUBGRAPHS :
                 Log.d(LOG_TAG, "CENTERS_EQUAL_SUBGRAPHS > in this case we can simplify the algorythm");
@@ -75,7 +76,7 @@ public class CalculatingThread extends Thread {
         }
         findCentersAlgorythm(useFullVersion);
         fakeCountCentersAlgorithm(); // FIXME delete this when ready
-        mCallback.calculationFinished();
+        mCallback.calculationFinished(null);
         Log.d(LOG_TAG, "<< run");
     }
 

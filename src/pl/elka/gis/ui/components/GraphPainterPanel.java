@@ -12,6 +12,7 @@ import javax.swing.JPanel;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import pl.elka.gis.logic.GraphResolver;
 import pl.elka.gis.model.Edge;
 import pl.elka.gis.model.Graph;
 import pl.elka.gis.model.Vertex;
@@ -25,7 +26,7 @@ public class GraphPainterPanel extends JPanel {
     private static final String LOG_TAG = GraphPainterPanel.class.getSimpleName();
     //
     private Graph mGraph;
-    // TODO Graph result
+    private GraphResolver.Result mResult;
     //
     private static final Color BG_COLOR = Color.WHITE, VERTEX_COLOR = Color.BLUE, EDGE_COLOR = Color.DARK_GRAY,
             CENTER_COLOR = Color.RED, LONGEST_PATH_COLOR = Color.RED, VERTEX_ID_COLOR = Color.BLACK;
@@ -34,10 +35,20 @@ public class GraphPainterPanel extends JPanel {
 
     public GraphPainterPanel() {
         setBackground(BG_COLOR);
+        reset();
+    }
+
+    public void reset() {
+        mGraph = null;
+        mResult = null;
     }
 
     public void setGraph(Graph graph) {
         mGraph = graph;
+    }
+
+    public void setResult(GraphResolver.Result result) {
+        mResult = result;
     }
 
     @Override
@@ -66,7 +77,13 @@ public class GraphPainterPanel extends JPanel {
             g2.fillOval(v.getX() - diff, v.getY() - diff, VERTEX_DIM, VERTEX_DIM);
         }
 
-        // TODO centers here
+        if (mResult != null && mResult.hasCenters()) {
+            Set<Vertex> centers = mResult.getCenters();
+            g2.setColor(CENTER_COLOR);
+            for (Vertex v : centers) {
+                g2.fillOval(v.getX() - diff, v.getY() - diff, VERTEX_DIM, VERTEX_DIM);
+            }
+        }
 
         g2.setColor(VERTEX_ID_COLOR);
         g2.setFont(VERTEX_ID_FONT);

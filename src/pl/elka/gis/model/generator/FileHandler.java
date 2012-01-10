@@ -25,6 +25,7 @@ import pl.elka.gis.utils.AppConstants;
  */
 public class FileHandler {
 
+    @Deprecated
     public static void readSourceFileContent(File source, Controller appController) throws FileNotFoundException {
         Set<GVertex> vertexes = appController.getVertexSet();
         Vector<GVertex> supportVertexVector = new Vector<GVertex>(); // it is used for convenient operations on data set (for
