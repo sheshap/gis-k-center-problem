@@ -55,10 +55,10 @@ public class GraphGenerationFrame extends JFrame {
         mProcessing.setFont(new Font(curFont.getFontName(), curFont.getStyle(), 20));
         mLines = new LabelAndText[5];
         mLines[0] = new LabelAndText("Filename: ", 20, -1);// -1 says "don't set text"
-        mLines[1] = new LabelAndText("Vertex count: ", 10, mGenerator.getVertexCount());
-        mLines[2] = new LabelAndText("Max vertex degree: ", 10, mGenerator.getMaxVertexDegree());
-        mLines[3] = new LabelAndText("Edge propability <0,100>: ", 10, mGenerator.getEdgesProbability());
-        mLines[4] = new LabelAndText("Min vertex distance: ", 10, mGenerator.getMinVertexCoordDifference());
+        mLines[1] = new LabelAndText("Vertex count: ", 4, mGenerator.getVertexCount());
+        mLines[2] = new LabelAndText("Max vertex degree: ", 4, mGenerator.getMaxVertexDegree());
+        mLines[3] = new LabelAndText("Edge propability <0,100>: ", 4, mGenerator.getEdgesProbability());
+        mLines[4] = new LabelAndText("Min vertex distance: ", 4, mGenerator.getMinVertexCoordDifference());
         Container pane = getContentPane();
         pane.setLayout(new BoxLayout(pane, BoxLayout.Y_AXIS));
         pane.add(mProcessing);
@@ -118,7 +118,7 @@ public class GraphGenerationFrame extends JFrame {
         private JTextField mTextField;
 
         public LabelAndText(String labelText, int textColumns, int defaultValue) {
-            setLayout(new FlowLayout());
+            setLayout(new FlowLayout(FlowLayout.LEFT));
             add(new JLabel(labelText));
             mTextField = new JTextField(defaultValue > 0 ? String.valueOf(defaultValue) : "", textColumns);
             add(mTextField);
