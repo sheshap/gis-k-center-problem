@@ -101,10 +101,6 @@ public class Vertex {
         this.mNearestCenter = nearestCenter;
     }
 
-    public boolean isCenter() {
-        return mIsCenter;
-    }
-
     public int distance(Vertex v) {
         return distance(this, v);
     }

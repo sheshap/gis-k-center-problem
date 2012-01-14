@@ -74,18 +74,19 @@ public class Graph {
             return;
         }
 
+        int n = mVertexes.size();
+
         if (mEdges.isEmpty()) {
-            mSubgraphsCount = mVertexes.size();
+            mSubgraphsCount = n;
             return;
         }
 
-        int n = mVertexes.size();
         if (mEdges.size() > (n - 1) * (n - 2) / 2) {
             mSubgraphsCount = 1;
             return;
         }
 
-        boolean[] marked = new boolean[mVertexes.size()];
+        boolean[] marked = new boolean[n];
 
         mSubgraphsCount = 0;
         for (Vertex v : mVertexes) {
