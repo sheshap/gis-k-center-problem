@@ -5,10 +5,14 @@ package pl.elka.gis.utils;
  */
 public class Log {
 
-    private static final boolean LOGGING_ON = true;
+    private static final boolean LOGGABLE = true;
+
+    public static boolean isLoggable() {
+        return LOGGABLE;
+    }
 
     public static void d(String logtag, String message) {
-        if (LOGGING_ON) {
+        if (LOGGABLE) {
             System.out.println(String.format("%-30s %s", logtag, message));
         }
     }
@@ -18,7 +22,7 @@ public class Log {
     }
 
     public static void e(String logtag, String message) {
-        if (LOGGING_ON) {
+        if (LOGGABLE) {
             System.err.println(String.format("%-30s %s", logtag, message));
         }
     }

@@ -86,6 +86,14 @@ public class Edge {
         return Pair.of(mVertex1, mVertex2);
     }
 
+    public Pair<Integer, Integer> getCenter() {
+        return Pair.of(center(mVertex1.getX(), mVertex2.getX()), center(mVertex1.getY(), mVertex2.getY()));
+    }
+
+    private int center(int x1, int x2) {
+        return Math.min(x1, x2) + Math.abs(x1 - x2) / 2;
+    }
+
     public int getWeight() {
         return mWeight;
     }
