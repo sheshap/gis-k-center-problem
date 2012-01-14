@@ -1,9 +1,10 @@
 package pl.elka.gis.logic;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import pl.elka.gis.model.Graph;
 import pl.elka.gis.model.Vertex;
@@ -22,8 +23,19 @@ public class GraphResolver {
     public static class Result {
 
         Set<Vertex> centers = null;
-        int centersCount = -1;
-        int longest = Integer.MAX_VALUE;
+        int centersCount = -1, longest = Integer.MAX_VALUE;
+        long sum = 0;
+        long startTime = 0, endTime = 0;
+
+        public Result() {
+        }
+
+        public Result(Result result) {
+            this.centers = new HashSet<Vertex>(result.centers);
+            this.centersCount = result.centersCount;
+            this.longest = result.longest;
+            this.sum = result.sum;
+        }
 
         public void setForCenters(int centersCount) {
             this.centersCount = centersCount;
@@ -31,10 +43,11 @@ public class GraphResolver {
         }
 
         public Set<Vertex> getCenters() {
-            if (centers == null)
-                return Collections.emptySet();
-            else
-                return centers;
+            return centers;
+            // if (centers == null)
+            // return Collections.emptySet();
+            // else
+            // return centers;
         }
 
         public boolean hasCenters() {
@@ -49,6 +62,18 @@ public class GraphResolver {
             return longest;
         }
 
+        public long getSum() {
+            return sum;
+        }
+
+        public int getTotalTimeInSeconds() {
+            return (int) ((endTime - startTime) / 1000);
+        }
+
+        public void setTimes(long startTime, long endTime) {
+            this.startTime = startTime;
+            this.endTime = endTime;
+        }
     }
 
     private static final String LOG_TAG = GraphResolver.class.getSimpleName();
@@ -74,13 +99,14 @@ public class GraphResolver {
         Log.d(LOG_TAG, Log.getCurrentMethodName() + " start");
 
         mResultCase = checkResultCase(centersCount);
+        Log.d(LOG_TAG, Log.getCurrentMethodName() + mResultCase.name());
 
         switch (mResultCase) {
             case NO_VERTEXES :
             case NO_CENTRALS :
             case INSUFFICIENT_VERTEXES :
             case TOO_MANY_SUBGRAPHS :
-                Log.d(LOG_TAG, Log.getCurrentMethodName() + " Calculation error: " + mResultCase.name());
+            case GENERAL_ERROR :
                 callback.calculationError(mResultCase.name());
                 return;
 
@@ -93,23 +119,22 @@ public class GraphResolver {
 
             case DEFAULT :
             default :
+                long startTime = System.currentTimeMillis();
+
                 int centersLeft = initializeCenters(centersCount);
 
-                Log.d(LOG_TAG, Log.getCurrentMethodName() + " centrals: " + centersCount);
+                Log.d(LOG_TAG, Log.getCurrentMethodName() + "centrals: " + centersCount);
 
-                Set<Vertex> vertexes = mGraph.getVertexes();
-                Vertex[] center = new Vertex[vertexes.size()];
-                Vertex[] result = new Vertex[vertexes.size()];
+                Set<Vertex> vertexes = new HashSet<Vertex>(mGraph.getVertexes());
+                int[] centerId = new int[vertexes.size()];
                 int[] d = new int[vertexes.size()];
                 Arrays.fill(d, Integer.MAX_VALUE);
-                boolean[] notAvailable = new boolean[vertexes.size()];
 
                 for (Vertex v : vertexes) {
                     if (v.isCenter()) {
-                        notAvailable[v.getId() - 1] = true;
-                        center[v.getId() - 1] = v;
-                        result[v.getId() - 1] = v;
+                        centerId[v.getId() - 1] = v.getId();
                         d[v.getId() - 1] = 0;
+                        vertexes.remove(v);
                     }
                 }
 
@@ -124,181 +149,130 @@ public class GraphResolver {
 
                 callback.updateProgress(0);
 
-                if (Thread.interrupted())
+                try {
+                    mResult = findCentral(new Result(mResult), centersLeft, vertexes, d, centerId, callback, progressDiff, level);
+                } catch (Exception e) {
+                    if (Log.isLoggable()) {
+                        e.printStackTrace();
+                    }
                     return;
-
-                mResult.longest = findCentral(Integer.MAX_VALUE, vertexes, notAvailable, centersLeft, d, center, result, callback, progressDiff, level);
-
-                if (mResult.longest == -1)
-                    return;
-
-                mResult.centers.clear();
-                for (int i = 0; i < result.length; i++) {
-                    mResult.centers.add(result[i]);
                 }
+
+                long endTime = System.currentTimeMillis();
+
+                mResult.setTimes(startTime, endTime);
+
                 callback.calculationFinished(mResult);
-
-                // StringBuilder sb = new StringBuilder();
-                // for (Vertex v : mResult.mCenters) {
-                // sb.append(v.getId());
-                // sb.append(" ");
-                // }
-                //
-                // Log.d(LOG_TAG, Log.getCurrentMethodName() + " Case: " + mResultCase.name() + " Longest: " + mResult.mLongest
-                // + " Centers: " + sb.toString());
-
-                return;
         }
     }
 
-    private String printCentrals(Vertex[] vertexes) {
-        StringBuilder sb = new StringBuilder();
-        for (Vertex v : vertexes) {
-            if (v == null)
-                sb.append("-");
-            else
-                sb.append(v.getId());
-            sb.append(" ");
+    private Result findCentral(Result result, int centersLeft, Set<Vertex> vertexes, int[] d, int[] centerId, ProgressCallback callback, float progressDiff, int level)
+                                                                                                                                                                       throws InterruptedException {
+
+        Log.d(LOG_TAG, Log.getCurrentMethodName() + " centers: " + centersLeft + " " + Arrays.toString(d));
+
+        if (Thread.interrupted())
+            throw new InterruptedException();
+
+        if (centersLeft == 0) {
+            Pair<Integer, Long> res = findMax(d);
+            result.longest = res.getLeft();
+            result.sum = res.getRight();
+            return result;
         }
 
-        return sb.toString();
-    }
-
-    // FIXME: just temporary on arrays in order to check if it's working
-
-    private int findCentral(int currentLongest, final Set<Vertex> vertexes, boolean[] notAvailable, int centralsLeft, int[] d, Vertex[] center, Vertex[] result, ProgressCallback callback, float progressDiff, int level) {
-        // Log.d(LOG_TAG, Log.getCurrentMethodName() + " centrals: " + centralsLeft + " " + Arrays.toString(notAvailable) + " "
-        // + Arrays.toString(d));
-
-        if (Thread.interrupted() || currentLongest == -1)
-            return -1;
-
-        Log
-                .d(LOG_TAG, String
-                        .format("left: %d, notAvailable: %s, d: %s, currentLongest: %d, centers: %s, result: %s", centralsLeft, Arrays
-                                .toString(notAvailable), Arrays.toString(d), currentLongest, printCentrals(center), printCentrals(result)));
-
-        if (centralsLeft == 0) {
-            int max = findMax(d);
-
-            Log.d(LOG_TAG, "FindMax = " + max);
-
-            if (max < currentLongest) {
-                for (int i = 0; i < center.length; i++) {
-                    result[i] = center[i];
-                }
-                currentLongest = max;
-            }
-
-            return currentLongest;
-        }
-
+        Result ret = result;
         for (Vertex v : vertexes) {
-            if (Thread.interrupted() || currentLongest == -1)
-                return -1;
+            if (Thread.interrupted())
+                throw new InterruptedException();
 
             if (level == 0)
                 callback.increaseProgress(progressDiff);
 
-            if (notAvailable[v.getId() - 1])
-                continue;
+            Result aResult = new Result(result);
+            Set<Vertex> aVertexes = new HashSet<Vertex>(vertexes);
+            int[] aD = Arrays.copyOf(d, d.length);
+            int[] aCenterId = Arrays.copyOf(centerId, centerId.length);
 
-            // mResult.mCenters.add(v);
-            int[] tmpD = Arrays.copyOf(d, d.length);
-            Vertex[] tmpCenter = Arrays.copyOf(center, center.length);
+            aResult.centers.add(v);
+            aVertexes.remove(v);
 
-            countDijkstra(v, vertexes, tmpD, tmpCenter, notAvailable);
-            notAvailable[v.getId() - 1] = true;
-            currentLongest = findCentral(currentLongest, vertexes, notAvailable, centralsLeft - 1, tmpD, tmpCenter, result, callback, progressDiff, level - 1);
-            notAvailable[v.getId() - 1] = false;
+            countDijkstra(v, new HashSet<Vertex>(vertexes), aD, aCenterId);
 
+            aResult = findCentral(aResult, centersLeft - 1, aVertexes, aD, aCenterId, callback, progressDiff, level - 1);
+            if (aResult.longest < ret.longest || (aResult.longest == ret.longest && aResult.sum < ret.sum)) {
+                ret = aResult;
+            }
         }
 
-        return currentLongest;
+        return ret;
     }
 
-    private int findMax(int[] d) {
-        int max = Integer.MIN_VALUE;
-        for (int i = 0; i < d.length; i++) {
-            max = Math.max(max, d[i]);
-        }
+    private void countDijkstra(final Vertex central, Set<Vertex> vertexes, int[] d, int[] centerId) {
+        Log.d(LOG_TAG, Log.getCurrentMethodName() + " v: " + central.getId());
 
-        return max;
-    }
+        int[] aD = new int[d.length];
+        Arrays.fill(aD, Integer.MAX_VALUE);
 
-    private void countDijkstra(final Vertex central, final Set<Vertex> vertexes, int[] d, Vertex[] center, final boolean[] notAvailable) {
-        // Log.d(LOG_TAG, Log.getCurrentMethodName() + " v: " + central.getId());
-
-        int[] pom_d = new int[vertexes.size()];
-        Arrays.fill(pom_d, Integer.MAX_VALUE);
-        boolean[] taken = Arrays.copyOf(notAvailable, notAvailable.length);
         d[central.getId() - 1] = 0;
-        pom_d[central.getId() - 1] = 0;
-        center[central.getId() - 1] = central;
+        aD[central.getId() - 1] = 0;
+        centerId[central.getId() - 1] = central.getId();
 
-        while (notEmpty(taken)) {
+        while (!vertexes.isEmpty()) {
 
-            // Log.d(LOG_TAG, Log.getCurrentMethodName() + "while");
-
-            int minIdx = findMinIndex(pom_d, taken);
-            if (pom_d[minIdx] == Integer.MAX_VALUE)
+            Vertex u = findMinVertex(aD, vertexes);
+            if (aD[u.getId() - 1] == Integer.MAX_VALUE)
                 break;
 
-            Vertex u = null;
-            for (Vertex ver : vertexes) {
-                if (ver.getId() - 1 == minIdx) {
-                    u = ver;
-                    taken[minIdx] = true;
-                    break;
-                }
-            }
-            // Log.d(LOG_TAG, Log.getCurrentMethodName() + "u:" + u.getId());
+            vertexes.remove(u);
 
             Set<Vertex> neighbours = u.getNeighbours();
             for (Vertex v : neighbours) {
                 int newDistance = d[u.getId() - 1] + Vertex.distance(u, v);
                 if (d[v.getId() - 1] > newDistance) {
                     d[v.getId() - 1] = newDistance;
-                    pom_d[v.getId() - 1] = newDistance;
-                    center[v.getId() - 1] = central;
+                    aD[v.getId() - 1] = newDistance;
+                    centerId[v.getId() - 1] = v.getId();
                 }
             }
+
         }
     }
 
-    private boolean notEmpty(boolean[] taken) {
-        for (int i = 0; i < taken.length; i++) {
-            if (!taken[i])
-                return true;
+    private Pair<Integer, Long> findMax(int[] d) {
+        int max = Integer.MIN_VALUE;
+        long sum = 0;
+        for (int i = 0; i < d.length; i++) {
+            max = Math.max(max, d[i]);
+            sum += d[i];
         }
 
-        return false;
+        return Pair.of(max, sum);
     }
 
-    private int findMinIndex(int[] pom_d, boolean[] taken) {
-        int min = Integer.MAX_VALUE, idx = 0;
+    private Vertex findMinVertex(int[] d, Set<Vertex> vertexes) {
+        int min = Integer.MAX_VALUE;
+        Vertex ret = null;
 
-        for (int i = 0; i < pom_d.length; i++) {
-            if (!taken[i] && pom_d[i] <= min) {
-                min = pom_d[i];
-                idx = i;
+        for (Vertex v : vertexes) {
+            if (d[v.getId() - 1] <= min) {
+                min = d[v.getId() - 1];
+                ret = v;
             }
         }
 
-        return idx;
+        return ret;
     }
 
     private int initializeCenters(int centersCount) {
         Log.d(LOG_TAG, Log.getCurrentMethodName());
 
         Set<Vertex> vertexes = mGraph.getVertexes();
-        Set<Vertex> pomVertexes = new HashSet<Vertex>();
         mResult.setForCenters(centersCount);
 
         for (Vertex v : vertexes) {
             if (v.hasNeighbours()) {
                 v.setShortestPathLength(Integer.MAX_VALUE);
-                pomVertexes.add(v);
             } else {
                 v.setShortestPathLength(0);
                 v.setNearestCenter(v);

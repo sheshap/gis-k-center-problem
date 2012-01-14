@@ -28,7 +28,7 @@ public class GraphPainterPanel extends JPanel {
     private Graph mGraph;
     private GraphResolver.Result mResult;
     //
-    private static final Color BG_COLOR = Color.WHITE, VERTEX_COLOR = Color.BLUE, EDGE_COLOR = Color.DARK_GRAY,
+    private static final Color BG_COLOR = Color.WHITE, VERTEX_COLOR = Color.BLUE, EDGE_COLOR = Color.LIGHT_GRAY,
             CENTER_COLOR = Color.RED, LONGEST_PATH_COLOR = Color.RED, VERTEX_ID_COLOR = Color.BLACK;
     private static final Font VERTEX_ID_FONT = new Font("Arial", Font.PLAIN, 10);
     private static final int VERTEX_DIM = 10, EDGE_DIM = 2;
@@ -93,6 +93,13 @@ public class GraphPainterPanel extends JPanel {
             String id = String.valueOf(v.getId());
             int width = fontMetrics.stringWidth(id);
             g2.drawString(id, v.getX() - width / 2, v.getY() - height);
+        }
+
+        for (Edge e : edges) {
+            String weight = String.valueOf(e.getWeight());
+            int width = fontMetrics.stringWidth(weight);
+            Pair<Integer, Integer> center = e.getCenter();
+            g2.drawString(weight, center.getLeft() - width / 2, center.getRight() - height / 2);
         }
 
     }
