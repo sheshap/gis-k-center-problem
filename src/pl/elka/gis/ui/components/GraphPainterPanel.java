@@ -29,7 +29,8 @@ public class GraphPainterPanel extends JPanel {
     private GraphResolver.Result mResult;
     //
     private static final Color BG_COLOR = Color.WHITE, VERTEX_COLOR = Color.BLUE, EDGE_COLOR = Color.LIGHT_GRAY,
-            CENTER_COLOR = Color.RED, LONGEST_PATH_COLOR = Color.RED, VERTEX_ID_COLOR = Color.BLACK;
+            CENTER_COLOR = Color.RED, PATH_VERTEX_COLOR = Color.GREEN, LONGEST_PATH_COLOR = Color.RED,
+            VERTEX_ID_COLOR = Color.BLACK;
     private static final Font VERTEX_ID_FONT = new Font("Arial", Font.PLAIN, 10);
     private static final int VERTEX_DIM = 10, EDGE_DIM = 2;
 
@@ -68,7 +69,14 @@ public class GraphPainterPanel extends JPanel {
             g2.drawLine(ends.getLeft().getX(), ends.getLeft().getY(), ends.getRight().getX(), ends.getRight().getY());
         }
 
-        // TODO longest path here
+        if (mResult != null && mResult.hasLongestPath()) {
+            g2.setColor(LONGEST_PATH_COLOR);
+            Set<Edge> path = mResult.getLongestPath();
+            for (Edge e : path) {
+                Pair<Vertex, Vertex> ends = e.getVertexes();
+                g2.drawLine(ends.getLeft().getX(), ends.getLeft().getY(), ends.getRight().getX(), ends.getRight().getY());
+            }
+        }
 
         Set<Vertex> vertexes = mGraph.getVertexes();
         g2.setColor(VERTEX_COLOR);
@@ -84,6 +92,14 @@ public class GraphPainterPanel extends JPanel {
                 g2.fillOval(v.getX() - diff, v.getY() - diff, VERTEX_DIM, VERTEX_DIM);
             }
         }
+
+        // if (mResult != null && mResult.hasLongestPathVertexes()) {
+        // Set<Vertex> pathVertexs = mResult.getLongestPathVertexes();
+        // g2.setColor(PATH_VERTEX_COLOR);
+        // for (Vertex v : pathVertexs) {
+        // g2.fillOval(v.getX() - diff, v.getY() - diff, VERTEX_DIM, VERTEX_DIM);
+        // }
+        // }
 
         g2.setColor(VERTEX_ID_COLOR);
         g2.setFont(VERTEX_ID_FONT);
