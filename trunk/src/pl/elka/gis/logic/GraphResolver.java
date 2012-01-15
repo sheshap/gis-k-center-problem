@@ -24,7 +24,6 @@ public class GraphResolver {
 
         Set<Vertex> centers = null;
         Set<Edge> longestPath = null;
-        Set<Vertex> longestPathVertexes = null;
         int centersCount = -1, longest = Integer.MAX_VALUE, longestVertexId = -1;
         Vertex longestVertexCenter = null;
         long sum = 0, startTime = 0, endTime = 0;
@@ -35,8 +34,6 @@ public class GraphResolver {
         public Result(Result result) {
             this.centers = new HashSet<Vertex>(result.centers);
             this.centersCount = result.centersCount;
-            // this.longest = result.longest;
-            // this.sum = result.sum;
         }
 
         public void setForCenters(int centersCount) {
@@ -64,6 +61,10 @@ public class GraphResolver {
                 return centers;
         }
 
+        public boolean hasCenters() {
+            return centers != null && !centers.isEmpty();
+        }
+
         public Set<Edge> getLongestPath() {
             if (longestPath == null)
                 return Collections.emptySet();
@@ -73,21 +74,6 @@ public class GraphResolver {
 
         public boolean hasLongestPath() {
             return longestPath != null && !longestPath.isEmpty();
-        }
-
-        public Set<Vertex> getLongestPathVertexes() {
-            if (longestPathVertexes == null)
-                return Collections.emptySet();
-            else
-                return longestPathVertexes;
-        }
-
-        public boolean hasLongestPathVertexes() {
-            return longestPathVertexes != null && !longestPathVertexes.isEmpty();
-        }
-
-        public boolean hasCenters() {
-            return centers != null && !centers.isEmpty();
         }
 
         public int getCentersCount() {
@@ -107,8 +93,8 @@ public class GraphResolver {
         }
 
         public void setTimes(long startTime, long endTime) {
-            this.startTime = startTime;
-            this.endTime = endTime;
+            this.startTime = Math.min(startTime, endTime);
+            this.endTime = Math.max(startTime, endTime);
         }
 
         public void setLongestPath(Graph graph) {
@@ -117,7 +103,7 @@ public class GraphResolver {
 
             boolean[] marked = new boolean[graph.getVertexes().size()];
             marked[longestVertexCenter.getId() - 1] = true;
-            longestPathVertexes = new HashSet<Vertex>();
+            Set<Vertex> longestPathVertexes = new HashSet<Vertex>();
 
             visitAllNeighbours(longestVertexCenter, longestPathVertexes, 0, marked);
             longestPathVertexes.add(longestVertexCenter);
