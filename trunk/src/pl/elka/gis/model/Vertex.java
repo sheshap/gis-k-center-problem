@@ -95,10 +95,13 @@ public class Vertex {
         if (nearestCenter == null)
             throw new IllegalArgumentException();
 
-        if (ObjectUtils.equals(this, nearestCenter))
-            mIsCenter = true;
+        mIsCenter = ObjectUtils.equals(this, nearestCenter);
 
         this.mNearestCenter = nearestCenter;
+    }
+
+    public boolean isCenter() {
+        return mIsCenter;
     }
 
     public int distance(Vertex v) {

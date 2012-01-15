@@ -16,6 +16,8 @@ import pl.elka.gis.utils.Log;
  */
 public class GraphResolver {
 
+    /******************** RESULT CLASS ********************/
+
     public enum ResultCase {
         DEFAULT, CENTRALS_EQUALS_SUBGRAPHS, NO_VERTEXES, NO_CENTRALS, INSUFFICIENT_VERTEXES, TOO_MANY_SUBGRAPHS, GENERAL_ERROR;
     }
@@ -147,6 +149,8 @@ public class GraphResolver {
             return false;
         }
     }
+
+    /******************** ACTUAL RESOLVER ********************/
 
     private static final String LOG_TAG = GraphResolver.class.getSimpleName();
     //

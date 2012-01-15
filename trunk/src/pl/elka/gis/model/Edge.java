@@ -40,6 +40,9 @@ public class Edge {
     }
 
     public boolean setVertexes(final Set<Vertex> vertexes) {
+        if (vertexes == null)
+            throw new NullPointerException();
+
         for (Vertex v : vertexes) {
             if (v.getId() == mVertex1Id) {
                 mVertex1 = v;
