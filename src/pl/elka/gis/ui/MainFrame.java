@@ -178,6 +178,7 @@ public class MainFrame extends JFrame implements ProgressCallback {
                         boolean isGraphLoaded = isGraphLoaded();
 
                         mGraph = Graph.fromFile(f);
+                        mResult = null;
 
                         mLastStatusText = String.format("%s :: vertexes=%d  edges=%d", f.getName(), mGraph.getVertexes().size(), mGraph
                                 .getEdges()
@@ -358,8 +359,8 @@ public class MainFrame extends JFrame implements ProgressCallback {
 
         mProgress = 0;
 
+        mResult = result;
         if (repaint) {
-            mResult = result;
             mGraphPanel.setResult(result);
             mGraphPanel.repaint();
         }
