@@ -64,8 +64,60 @@ instance SheetTemplate Sheet where --Sheet is child of SheetTemplate and if give
 	getRows (Sh os) = os
 	setRows os (Sh ps) = Sh os
 	
-	
------------------------------------------------------------ other functions -------------------------------------------------------------------	
+--------------------------------------------------------------------- constants -------------------------------------------------------------------
+-- sheet files default extension
+ext = ".she"
+-- console sign (prompt)
+con = "HaskCel>> "
+-- empty string for sheet cell
+emp = ""
+-- sum function in the cell
+sum = "SUM"
+-- multiply function in the cell
+mul = "MUL"
+-- average function in the cell
+avg = "AVG"
+-- functions arguments splitter
+fsplit = ";"
+-- split between ranges
+frangesplit = "-"
+-- split between ranges as char
+frangesplitc = '-'
+-- function indexes split - split between cell indexes
+fis = ","
+-- function indexes split as char - split between cell indexes
+fisc = ','
+--separator in file
+fileCellsSeparator = "<@#x$%>"
+-- error in formula
+formulaerror = "###"
+-- when error in formula - we return special flag value
+minInt = minBound::Int
+formulaerrorint = (minInt + 2)
+-- columns separator
+columnsSeparator = "   "
+-- top label separator
+topLabelSeparator = "="
+--help in main menu
+helpMain = "help - shows this help \n" ++
+		"new <name> - creates new sheet with a given filename \n" ++
+		"open <filename> - opens <filename> sheet \n" ++
+		"exit - quits the program \n"
+--help in loaded/new sheet menu
+helpOpened = "help - shows this help \n " ++
+		"open <filename> - opens <filename> sheet \n" ++
+		"new <name> - creates new sheet with a given name \n" ++
+		"show - prints current sheet to console \n" ++
+		"save [<filename>] - saves current sheet, optionally to the given filename \n" ++
+		"setval <rowIndex> <columnIndex> <value> - puts <value> to requested cell (updates value if exists) \n" ++
+		"    <value> can be a SUM/MUL/AVG function i.e. SUM 1,1;3,5;2,0-2,5 \n" ++
+		"    examples: setval 1 2 hello OR setval 3 1 SUM 1,1;3,5;2,0-2,5 \n" ++
+		"del <rowIndex> <columnIndex> - deletes requested cell \n" ++
+		"delrow <rowIndex> - deletes requested row \n" ++
+		"delcol <columnIndex> - deletes requested column \n" ++
+		"exit - quits the program \n"
+
+------------------------------------------------------------------ functions -------------------------------------------------------------------	
 --gets ID from the Row type
 getId :: Row -> ID
 getId (MakeRow i cells) = i
@@ -96,7 +148,7 @@ insertAt [] val i =
 insertAt (x:xs) val i =
 			--if i==0 then val : x : xs  -- this way we add out value before existing (cells move one forward)
 			if i==0 then val : xs -- this way we replace the cell content
-			else x: insertAt xs val (i-1)
+			else x : insertAt xs val (i-1)
 
 --checks if Row with given ID exists from the [Row]			
 doesRowExist [] _ = False
@@ -329,41 +381,8 @@ centerString str len =
 	else
 		createSpaces ((len - (length str)) `div` 2) ++ str ++ createSpaces ((len - (length str)) - ((len - (length str)) `div` 2))
 
----------------------------------- START: FORMULA COUNTING -----------------------
-{-
---this method counts the formulas created by user it is complicated and long
---special formula format is i.e. SUM 1,1;2,4;3,1-3,5;4,1
-countFormulas :: [Row] -> [Row] -> [Row]
-countFormulas [] _ = []
-countFormulas (x:xs) orgRows = countRow x orgRows : countFormulas xs orgRows
-	
-	where 
-		--counts new data for the row
-		countRow row (x:xs) = 
-			if containsSpecial (getCells row) then
-				--if row contains special formula then we need to count it and update row
-				MakeRow (getId row) (updateRowWithSpecialCountedData (countSpecial (getSpecial (getCells row)) orgRows) (getCells row))
-			else row --if no special formula found then just leave the row
 		
-		--updates row with counted formula data it takes new value and [Cell] as params
-		updateRowWithSpecialCountedData val (x:xs) =
-			-- we search the cells for special formula and replace it with the new value (counted formula value)
-			if startsWith 3 Proj.sum x || startsWith 3 Proj.mul x || startsWith 3 Proj.avg x then
-				val : xs
-			else x : updateRowWithSpecialCountedData val xs
-			
-		--checks if Row as list of cells contains special formula
-		containsSpecial [] = False
-		containsSpecial (x:xs) = 
-			if startsWith 3 Proj.sum x || startsWith 3 Proj.mul x || startsWith 3 Proj.avg x then True
-			else containsSpecial xs
-		
-		--gets the special formula as string from the list of cells (firstly cells are checked if symbol really exists on the list)
-		getSpecial [] = ""
-		getSpecial (x:xs) = 
-			if startsWith 3 Proj.sum x || startsWith 3 Proj.mul x || startsWith 3 Proj.avg x then x
-			else getSpecial xs
--}
+-------------------------------------------------------- START: FORMULA COUNTING -----------------------
 
 --it counts special formula, it takes formula as string, all sheet rows and returns new counted value as string to be saved into cell
 --param formula example 1,1;2,4;3,1-3,5;4,1
@@ -383,23 +402,24 @@ countFormula content orgRows =
 		--we compare count sum results to special Int to check if all rows are really Int (otherwise countSumFromCells returns this special Int value)
 		if (countSumFromCells (analizeRange (drop 4 content)) orgRows) /= formulaerrorint then
 			-- counting AVG (average) is just sum and divide by items count
-			show ( (countSumFromCells (analizeRange (drop 4 content)) orgRows) `div` (length (splitOn fsplit (drop 4 content))) )
+			show ( (countSumFromCells (analizeRange (drop 4 content)) orgRows) `div` (length (analizeRange (drop 4 content))) )
 		else formulaerror
 	else content	
 	
 	where
-		
 		--take table of cells indexes ie. ["2,1", "4,4"] and original rows from sheet to count their sum - returns formulaerrorint in any cell is NOT digit
 		countSumFromCells [] _ = 0
 		countSumFromCells (x:xs) orgRows = 
-			if checkCellsAreDigits (x:xs) orgRows then
+			if length (x:xs) > 0 && checkCellsAreDigits (x:xs) orgRows then
 				(getCellValueStr x orgRows) + (countSumFromCells xs orgRows)
 			else formulaerrorint
 
 		--take table of cells indexes ie. ["2,1", "4,4"] and original rows from sheet and multiplies them - returns formulaerrorint in any cell is NOT digit
 		countMulFromCells [] _ = 1
 		countMulFromCells (x:xs) orgRows = 
-			(getCellValueStr x orgRows) * (countSumFromCells xs orgRows)
+			if length (x:xs) > 0 && checkCellsAreDigits (x:xs) orgRows then
+				(getCellValueStr x orgRows) * (countSumFromCells xs orgRows)
+			else formulaerrorint
 		
 		--checks if given row as [Cell] contains only digits
 		checkCellsAreDigits [] _ = True
@@ -410,63 +430,21 @@ countFormula content orgRows =
 		checkCellDigit :: String -> [Row] -> Bool
 		checkCellDigit coord orgRows = do
 			let val = getCellValue (getInt 0 coord) (getInt 1 coord) orgRows orgRows
-			checkAllDigits val == True
+			if length val > 0 then
+				if head val == '-' && length val > 1 then
+					checkAllDigits (drop 1 val)
+				else
+					checkAllDigits val
+			else False
 			
-		--it takes formula values (part after SUM/MUL/AVG) and divides into list of cells that takes part in counting formula value
-		--param formula example 1,1;2,4;3,1-3,5;4,1
-		analizeRange :: String -> [String]
-		analizeRange ct = 
-			analizeSplitted (splitOn fsplit ct)
-		
-		--continues analizing formula, gets splitted formula values (split by fsplit)
-		--param formula example ["1,1","2,4","3,1-3,5","4,1"]
-		analizeSplitted [] = []
-		analizeSplitted (x:xs) =
-			if takeWhile (/=frangesplitc) x == [] then
-				-- single element ex. 1,2
-				x : analizeSplitted xs
-			else
-				-- range element ex. 2,1-2,7 or 1,3-1,6
-				splitRange (head (splitOn frangesplit x)) (last (splitOn frangesplit x)) ++ analizeSplitted xs
-		
-		--splits the formula range into table of values ex. 2,1-2,4 to ["2,1","2,2","2,3","2,4"]
-		splitRange a0 a1 = 
-			if takeWhile (/= fisc) a0 == takeWhile (/= fisc) a1 then
-				splitIndex0 a0 a1
-			else 
-				splitIndex1 a0 a1
-				
-		-- takes range start and end (row is constant) - range x,v x,u ex. 2,1 2,5	
-		splitIndex0 a0 a1 = 
-					a0 : index0 a0  ((getInt 1 a1) - (getInt 1 a0))
-				
-		-- takes range start and end (column is constant) - range v,y u,y ex. 1,3 4,3	
-		splitIndex1 a0 a1 =
-			a0 : index1 a0  ((getInt 0 a1) - (getInt 0 a0))
-		
-		--creates middle elements with count 'range' (by index0 - so increments rows) i.e. index0 2,1 4 creates table ["2,1","2,2","2,3","2,4"]
-		index0 a0 range =
-			if range > 0 then
-				((getStr 0 a0)  ++ fis ++ ( inc (getStr 1 a0) ))
-				 : index0 ((getStr 0 a0)  ++ fis ++ ( inc (getStr 1 a0) )) (range-1)
-			else []
-
-		--creates middle elements with count 'range' (by index1 - so increments columns) i.e. index1 2,1 4 creates table ["2,1","3,1","4,1","5,1"]
-		index1 a0 range =
-			if range > 0 then
-				(inc (getStr 0 a0)  ++ fis ++ (getStr 1 a0))
-				 : index1 ( (inc (getStr 0 a0))  ++ fis ++ (getStr 1 a0) ) (range-1)
-			else []
-		
-		--increments string value by 1 (this MUST be string value that is parseable to Int)
-		inc str = show (1 + (read str :: Int))
-
 		--gets cell value as Int from a given indexes as string <row,col> ex. "2,1" gets Int value from cell at row 2 column 1
 		--this function returns formulaerrorint Int value if required field is NOT a number
 		getCellValueStr :: String -> [Row] -> Int
 		getCellValueStr coord orgRows = do
 			let val = getCellValue (getInt 0 coord) (getInt 1 coord) orgRows orgRows
-			if checkAllDigits val == True then
+			if length val > 0 && checkAllDigits val then
+				read (val) :: Int
+			else if length val > 1 && head val == '-' && checkAllDigits (drop 1 val) then
 				read (val) :: Int
 			else formulaerrorint
 			
@@ -475,17 +453,6 @@ countFormula content orgRows =
 		getCellValue r c (x:xs) orgRows = 
 			if r == 0 then getValFromCells c (getCells x) orgRows
 			else getCellValue (r-1) c xs orgRows
-	
-		
-		
-{-		
-		cellsToStringShow (x:xs) originalRows d =
-			if take 1 x == "=" then
-				--remove "=" from beginning and count formula
-				(centerString (countFormula (drop 1 x) originalRows) d) ++ columnsSeparator ++ (cellsToStringShow xs originalRows d)
-			else
-				(centerString x d) ++ columnsSeparator ++ (cellsToStringShow xs originalRows d)
-				-}
 				
 --helper for getCellValue - returns value at c-columnIndex position from list of cells
 getValFromCells _ [] _ = emp
@@ -496,61 +463,78 @@ getValFromCells c (x:xs) orgRows =
 				else x
 			else getValFromCells (c-1) xs orgRows
 			
----------------------------------- END: FORMULA COUNTING -----------------------------
+--it takes formula values (part after SUM/MUL/AVG) and divides into list of cells that takes part in counting formula value
+--param formula example 1,1;2,4;3,1-3,5;4,1
+analizeRange :: String -> [String]
+analizeRange ct = 
+	analizeSplitted (splitOn fsplit ct)
+	
+--continues analizing formula, gets splitted formula values (split by fsplit)
+--param formula example ["1,1","2,4","3,1-3,5","4,1"]
+analizeSplitted [] = []
+analizeSplitted (x:xs) =
+	if takeWhile (/=frangesplitc) x == [] then
+		-- single element ex. 1,2
+		x : analizeSplitted xs
+	else
+		-- range element ex. 2,1-2,7 or 1,3-1,6
+		splitRange (head (splitOn frangesplit x)) (last (splitOn frangesplit x)) ++ analizeSplitted xs
 
+--splits the formula range into table of values ex. 2,1-2,4 to ["2,1","2,2","2,3","2,4"]
+splitRange a0 a1 = 
+	if takeWhile (/= fisc) a0 == takeWhile (/= fisc) a1 then
+		splitIndex0 a0 a1
+	else 
+		splitIndex1 a0 a1
+		
+-- takes range start and end (row is constant) - range x,v x,u ex. 2,1 2,5	
+splitIndex0 a0 a1 = 
+			a0 : index0 a0  ((getInt 1 a1) - (getInt 1 a0))
+		
+-- takes range start and end (column is constant) - range v,y u,y ex. 1,3 4,3	
+splitIndex1 a0 a1 =
+	a0 : index1 a0  ((getInt 0 a1) - (getInt 0 a0))
 
---------------------------------------------------------------------- constants -------------------------------------------------------------------
--- sheet files default extension
-ext = ".she"
--- console sign (prompt)
-con = "HaskCel>> "
--- empty string for sheet cell
-emp = ""
--- sum function in the cell
-sum = "SUM"
--- multiply function in the cell
-mul = "MUL"
--- average function in the cell
-avg = "AVG"
--- functions arguments splitter
-fsplit = ";"
--- split between ranges
-frangesplit = "-"
--- split between ranges as char
-frangesplitc = '-'
--- function indexes split - split between cell indexes
-fis = ","
--- function indexes split as char - split between cell indexes
-fisc = ','
---separator in file
-fileCellsSeparator = "<@#x$%>"
--- error in formula
-formulaerror = "###"
--- when error in formula - we return special flag value
-minInt = minBound::Int
-formulaerrorint = (minInt + 2)
--- columns separator
-columnsSeparator = "   "
--- top label separator
-topLabelSeparator = "="
---help in main menu
-helpMain = "help - shows this help \n" ++
-		"new <name> - creates new sheet with a given filename \n" ++
-		"open <filename> - opens <filename> sheet \n" ++
-		"exit - quits the program \n"
---help in loaded/new sheet menu
-helpOpened = "help - shows this help \n " ++
-		"open <filename> - opens <filename> sheet \n" ++
-		"new <name> - creates new sheet with a given name \n" ++
-		"show - prints current sheet to console \n" ++
-		"save [<filename>] - saves current sheet, optionally to the given filename \n" ++
-		"setval <rowIndex> <columnIndex> <value> - puts <value> to requested cell (updates value if exists) \n" ++
-		"    <value> can be a SUM/MUL/AVG function i.e. SUM 1,1;3,5;2,0-2,5 \n" ++
-		"    examples: setval 1 2 hello OR setval 3 1 SUM 1,1;3,5;2,0-2,5 \n" ++
-		"del <rowIndex> <columnIndex> - deletes requested cell \n" ++
-		"delrow <rowIndex> - deletes requested row \n" ++
-		"delcol <columnIndex> - deletes requested column \n" ++
-		"exit - quits the program \n"
+--creates middle elements with count 'range' (by index0 - so increments rows) i.e. index0 2,1 4 creates table ["2,1","2,2","2,3","2,4"]
+index0 a0 range =
+	if range > 0 then
+		((getStr 0 a0)  ++ fis ++ ( inc (getStr 1 a0) ))
+		 : index0 ((getStr 0 a0)  ++ fis ++ ( inc (getStr 1 a0) )) (range-1)
+	else []
+	
+--creates middle elements with count 'range' (by index1 - so increments columns) i.e. index1 2,1 4 creates table ["2,1","3,1","4,1","5,1"]
+index1 a0 range =
+	if range > 0 then
+		(inc (getStr 0 a0)  ++ fis ++ (getStr 1 a0))
+		 : index1 ( (inc (getStr 0 a0))  ++ fis ++ (getStr 1 a0) ) (range-1)
+		else []
+
+--increments string value by 1 (this MUST be string value that is parseable to Int)
+inc str = show (1 + (read str :: Int))
+
+--check if the destination cell of the formula is not used by another formula
+--params: new formula row, new formula column, sheet's rows
+checkIfDestinationCellUsedInOtherFormula _ _ [] = False
+checkIfDestinationCellUsedInOtherFormula rowIndex columnIndex (x:xs) = 
+	checkIfDestinationCellUsedInOtherFormulaCells  rowIndex columnIndex (getCells x) || 
+		checkIfDestinationCellUsedInOtherFormula rowIndex columnIndex xs 
+		
+--check if the destination cell of the formula is not used by another formula
+--params: new formula row, new formula column, rows' cells list
+checkIfDestinationCellUsedInOtherFormulaCells  _ _ [] = False	
+checkIfDestinationCellUsedInOtherFormulaCells rowIndex columnIndex (x:xs) = 
+	if x /= [] && head x == '=' then -- if it is start of formula and not empty cell
+		compareVals rowIndex columnIndex (analizeRange (drop 5 x)) || checkIfDestinationCellUsedInOtherFormulaCells rowIndex columnIndex xs
+	else checkIfDestinationCellUsedInOtherFormulaCells rowIndex columnIndex xs
+	
+--compares new formula row, new formula column as ("row,col" string) with table of cells (used in another formula)
+compareVals :: String -> String -> [String] -> Bool
+compareVals _ _ [] = False
+compareVals a0 a1 (x:xs) = 
+	if (a0 ++ fis ++ a1) == x then True
+	else compareVals a0 a1 xs
+				
+------------------------------------------------------ END: FORMULA COUNTING -----------------------------
 
 
 ----------------------------------------------------------------------- logic ---------------------------------------------------------------------
@@ -685,21 +669,24 @@ loadedSheet sheet name = do
 		let params2 = drop 1 (dropWhile (/=' ') params)
 		let columnIndex = takeWhile (/=' ') params2
 		let val = drop 1 (dropWhile (/=' ') params2)
-		if checkAllDigits rowIndex && checkAllDigits columnIndex then do
+		if length rowIndex > 0 && length columnIndex > 0 && checkAllDigits rowIndex && checkAllDigits columnIndex then do
 			if checkIfContains rowIndex columnIndex val then do --check if there is special formula and if it used destination cell as source cell
 				hPutStrLn stderr ("SUM/MUL/AVG formula incorrect (can't count formula with use of destination cell): " ++ val)
 				loadedSheet sheet name 
 			else do
 				if checkFormulaSyntax val then do -- now check the syntax of the formula
-					putStrLn ("Inserting value to current sheet: value=" ++ val ++ " at=" ++ rowIndex ++ "," ++ columnIndex)
 					if startsWith 3 Proj.sum val || startsWith 3 Proj.mul val || startsWith 3 Proj.avg val then do
-						--if the user puts formula in the cell it starts with "="
-						let newsheet = setValue ("=" ++ val) (read rowIndex :: Int) (read columnIndex :: Int) sheet --set value in the cell
-						loadedSheet newsheet name 
-						--putStrLn ("Count formulas")
-						--let s2 = Sh (countFormulas (getRows newsheet) (getRows newsheet))
-						--loadedSheet s2 name 
+						--check if any of the cells in this formula range contains another formula 
+						if checkIfDestinationCellUsedInOtherFormula rowIndex columnIndex (getRows sheet) then do
+							hPutStrLn stderr ("Formula destination cell is used by another formula - can't insert: " ++ val)
+							loadedSheet sheet name 
+						else do
+							putStrLn ("Inserting value to current sheet: value=" ++ ("=" ++ val) ++ " at=" ++ rowIndex ++ "," ++ columnIndex)
+							--if the user puts formula in the cell it starts with "="
+							let newsheet = setValue ("=" ++ val) (read rowIndex :: Int) (read columnIndex :: Int) sheet --set value in the cell
+							loadedSheet newsheet name 
 					else do 
+						putStrLn ("Inserting value to current sheet: value=" ++ val ++ " at=" ++ rowIndex ++ "," ++ columnIndex)
 						let newsheet = setValue val (read rowIndex :: Int) (read columnIndex :: Int) sheet --set value in the cell
 						loadedSheet newsheet name 
 				else do
@@ -713,7 +700,7 @@ loadedSheet sheet name = do
 		let params = (drop 4 w)
 		let rowIndex = takeWhile (/=' ') params
 		let columnIndex = drop 1 (dropWhile (/=' ') params)
-		if checkAllDigits rowIndex && checkAllDigits columnIndex then do
+		if length rowIndex > 0 && length columnIndex > 0 && checkAllDigits rowIndex && checkAllDigits columnIndex then do
 			putStrLn ("Remove value at=" ++ rowIndex ++ "," ++ columnIndex)
 			--this is just setting cell value to empty - it does not move(change positions of) cells in the row!
 			let newsheet = setValue emp (read rowIndex :: Int) (read columnIndex :: Int) sheet
@@ -724,7 +711,7 @@ loadedSheet sheet name = do
 	----------------
 	else if (take 6 w) =="delrow" then do --deletes single row
 		let rowIndex = (drop 7 w)
-		if checkAllDigits rowIndex then do
+		if length rowIndex > 0 && checkAllDigits rowIndex then do
 			putStrLn ("Remove row " ++ rowIndex)
 			let newsheet = deleteRow (read rowIndex :: Int) sheet
 			loadedSheet newsheet name 
@@ -734,7 +721,7 @@ loadedSheet sheet name = do
 	----------------
 	else if (take 6 w) =="delcol" then do --deletes single column
 		let colIndex = (drop 7 w)
-		if checkAllDigits colIndex then do
+		if length colIndex > 0 && checkAllDigits colIndex then do
 			putStrLn ("Remove column " ++ colIndex)
 			let newsheet = deleteColumn (read colIndex :: Int) sheet
 			loadedSheet newsheet name 
