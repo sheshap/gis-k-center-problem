@@ -99,23 +99,23 @@ columnsSeparator = "   "
 -- top label separator
 topLabelSeparator = "="
 --help in main menu
-helpMain = "help - shows this help \n" ++
-		"new <name> - creates new sheet with a given filename \n" ++
-		"open <filename> - opens <filename> sheet \n" ++
-		"exit - quits the program \n"
+helpMain = "  help - shows this help \n" ++
+		"  new <name> - creates new sheet with a given filename \n" ++
+		"  open <filename> - opens <filename> sheet \n" ++
+		"  exit - quits the program \n"
 --help in loaded/new sheet menu
-helpOpened = "help - shows this help \n " ++
-		"open <filename> - opens <filename> sheet \n" ++
-		"new <name> - creates new sheet with a given name \n" ++
-		"show - prints current sheet to console \n" ++
-		"save [<filename>] - saves current sheet, optionally to the given filename \n" ++
-		"setval <rowIndex> <columnIndex> <value> - puts <value> to requested cell (updates value if exists) \n" ++
-		"    <value> can be a SUM/MUL/AVG function i.e. SUM 1,1;3,5;2,0-2,5 \n" ++
-		"    examples: setval 1 2 hello OR setval 3 1 SUM 1,1;3,5;2,0-2,5 \n" ++
-		"del <rowIndex> <columnIndex> - deletes requested cell \n" ++
-		"delrow <rowIndex> - deletes requested row \n" ++
-		"delcol <columnIndex> - deletes requested column \n" ++
-		"exit - quits the program \n"
+helpOpened = "  help - shows this help \n " ++
+		"  open <filename> - opens <filename> sheet \n" ++
+		"  new <name> - creates new sheet with a given name \n" ++
+		"  show - prints current sheet to console \n" ++
+		"  save [<filename>] - saves current sheet, optionally to the given filename \n" ++
+		"  setval <rowIndex> <columnIndex> <value> - puts <value> to requested cell (updates value if exists) \n" ++
+		"     <value> can be a SUM/MUL/AVG function i.e. SUM 1,1;3,5;2,0-2,5 \n" ++
+		"     examples: setval 1 2 hello OR setval 3 1 SUM 1,1;3,5;2,0-2,5 \n" ++
+		"  del <rowIndex> <columnIndex> - deletes requested cell \n" ++
+		"  delrow <rowIndex> - deletes requested row \n" ++
+		"  delcol <columnIndex> - deletes requested column \n" ++
+		"  exit - quits the program \n"
 
 ------------------------------------------------------------------ functions -------------------------------------------------------------------	
 --gets ID from the Row type
@@ -418,7 +418,7 @@ countFormula content orgRows =
 		countMulFromCells [] _ = 1
 		countMulFromCells (x:xs) orgRows = 
 			if length (x:xs) > 0 && checkCellsAreDigits (x:xs) orgRows then
-				(getCellValueStr x orgRows) * (countSumFromCells xs orgRows)
+				(getCellValueStr x orgRows) * (countMulFromCells xs orgRows)
 			else formulaerrorint
 		
 		--checks if given row as [Cell] contains only digits
@@ -732,8 +732,3 @@ loadedSheet sheet name = do
 	else do 
 		hPutStrLn stderr "Unsupported command"
 		loadedSheet sheet name  
-
-
-
-   
-
